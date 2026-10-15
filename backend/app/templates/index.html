@@ -1,0 +1,2471 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BookBridge – Digital Public Library &amp; Community Book Exchange</title>
+  
+  <!-- Fonts: Plus Jakarta Sans (Modern UI) + Playfair Display (Editorial Literary Serifs) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Confetti for Celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            parchment: {
+              50: '#FAF8F5',
+              100: '#F5F1E9',
+              200: '#EBE5D8',
+              300: '#DDD4C0',
+              900: '#2A2418'
+            },
+            emerald: {
+              50: '#F0FDF4',
+              100: '#DCFCE7',
+              200: '#BBF7D0',
+              600: '#16A34A',
+              700: '#15803D',
+              800: '#166534',
+              900: '#14532D',
+              950: '#052E16'
+            },
+            ink: {
+              900: '#0C111D',
+              800: '#1D2939',
+              700: '#344054',
+              600: '#475467',
+              500: '#667085',
+              400: '#98A2B3',
+              300: '#D0D5DD',
+              200: '#EAECF0',
+              100: '#F2F4F7',
+              50: '#F8F9FA'
+            },
+            gold: {
+              400: '#FBBF24',
+              500: '#F59E0B',
+              600: '#D97706',
+              700: '#B45309'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
+          boxShadow: {
+            'book': '0 15px 35px -5px rgba(12, 17, 29, 0.2), 0 5px 15px -3px rgba(12, 17, 29, 0.08), inset 4px 0 8px -2px rgba(0,0,0,0.25)',
+            'book-hover': '0 25px 45px -8px rgba(12, 17, 29, 0.3), 0 10px 20px -4px rgba(12, 17, 29, 0.12), inset 4px 0 8px -2px rgba(0,0,0,0.3)',
+            'glass': '0 8px 32px 0 rgba(12, 17, 29, 0.06)',
+            'elevated': '0 20px 40px -10px rgba(22, 101, 52, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.05)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Premium visual styling */
+    body {
+      background-color: #FAF8F5;
+      color: #1D2939;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      overflow-x: hidden;
+      background-image: radial-gradient(#EBE5D8 0.75px, transparent 0.75px);
+      background-size: 24px 24px;
+    }
+
+    /* Ambient noise & blur effects */
+    .glass-nav {
+      background: rgba(250, 248, 245, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* Realistic 3D book styling */
+    .book-cover-3d {
+      position: relative;
+      border-radius: 6px 14px 14px 6px;
+      overflow: hidden;
+      box-shadow: 
+        -4px 4px 12px -2px rgba(0,0,0,0.18),
+        8px 12px 24px -4px rgba(12, 17, 29, 0.18),
+        inset 5px 0 8px -2px rgba(0,0,0,0.4),
+        inset -2px 0 4px rgba(255,255,255,0.25);
+      transform-origin: left center;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .book-cover-3d:hover {
+      transform: translateY(-6px) rotateY(-4deg) scale(1.02);
+      box-shadow: 
+        -8px 10px 20px -4px rgba(0,0,0,0.22),
+        16px 24px 36px -6px rgba(12, 17, 29, 0.24),
+        inset 5px 0 8px -2px rgba(0,0,0,0.45);
+    }
+
+    .book-spine-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 10px;
+      width: 2px;
+      background: rgba(255, 255, 255, 0.25);
+      box-shadow: 1px 0 3px rgba(0, 0, 0, 0.35);
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* Shimmer loading */
+    .skeleton-shimmer {
+      background: linear-gradient(90deg, #F2F4F7 25%, #E5E7EB 50%, #F2F4F7 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.6s infinite ease-in-out;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: #FAF8F5; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #166534; }
+
+    /* Floating animation */
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-8px) rotate(1deg); }
+    }
+    .animate-float {
+      animation: floatSlow 6s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-emerald-800 selection:text-white">
+
+  <!-- ============================================================== -->
+  <!-- TOP PROMO & LIVE ACTIVITY TICKER -->
+  <!-- ============================================================== -->
+  <div class="bg-ink-900 text-stone-300 text-xs py-2 px-4 border-b border-ink-800/80">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+          LIVE CATALOG
+        </span>
+        <span class="hidden sm:inline text-stone-400">Open Public Access • 100% Free Borrowing &amp; Member Exchange</span>
+      </div>
+      <div class="flex items-center gap-4 text-[11px] font-medium text-stone-400">
+        <span class="hover:text-emerald-400 cursor-pointer transition-colors" onclick="app.navigate('library')">✨ New Releases Available</span>
+        <span class="text-stone-700">|</span>
+        <span class="hover:text-amber-300 cursor-pointer transition-colors" onclick="app.navigate('donate')">🎁 Donate &amp; Earn Library Karma</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- FLOATING FROSTED NAVBAR -->
+  <!-- ============================================================== -->
+  <header class="sticky top-3 z-40 px-4 sm:px-6">
+    <div class="max-w-7xl mx-auto glass-nav border border-stone-200/80 rounded-2xl sm:rounded-3xl shadow-glass px-4 sm:px-6 py-3 transition-all duration-300">
+      <div class="flex items-center justify-between gap-4">
+        
+        <!-- Brand Logo -->
+        <a href="javascript:void(0)" onclick="app.navigate('home')" class="flex items-center gap-3 group">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-800 to-emerald-950 flex items-center justify-center text-white shadow-md shadow-emerald-950/20 group-hover:scale-105 transition-transform duration-300">
+            <i data-lucide="book-marked" class="w-6 h-6 text-emerald-300"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-serif font-black text-2xl tracking-tight text-ink-900 group-hover:text-emerald-800 transition-colors">BookBridge</span>
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-emerald-100 text-emerald-800 tracking-wider">v2.0</span>
+            </div>
+            <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-widest leading-none">Public Library &amp; Exchange</p>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="hidden md:flex items-center gap-1 bg-stone-100/70 p-1.5 rounded-2xl border border-stone-200/50">
+          <button onclick="app.navigate('home')" data-nav="home" class="nav-item flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-ink-700 hover:text-ink-900 hover:bg-white transition-all">
+            <i data-lucide="compass" class="w-4 h-4"></i>
+            <span>Discover</span>
+          </button>
+          <button onclick="app.navigate('library')" data-nav="library" class="nav-item flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-ink-700 hover:text-ink-900 hover:bg-white transition-all">
+            <i data-lucide="book-open" class="w-4 h-4"></i>
+            <span>Library Stacks</span>
+          </button>
+          <button onclick="app.navigate('donate')" data-nav="donate" class="nav-item flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-ink-700 hover:text-ink-900 hover:bg-white transition-all">
+            <i data-lucide="heart-handshake" class="w-4 h-4"></i>
+            <span>Donate</span>
+          </button>
+          <button onclick="app.navigate('exchanges')" data-nav="exchanges" class="nav-item flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-ink-700 hover:text-ink-900 hover:bg-white transition-all">
+            <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+            <span>Exchange Hub</span>
+          </button>
+          <button id="admin-nav-btn" onclick="app.navigate('admin')" data-nav="admin" class="hidden nav-item flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-extrabold text-amber-900 bg-amber-100/80 hover:bg-amber-200 border border-amber-300 transition-all">
+            <i data-lucide="shield-check" class="w-4 h-4 text-amber-700"></i>
+            <span>Librarian Console</span>
+          </button>
+        </nav>
+
+        <!-- Right Side Controls / User Profile -->
+        <div class="flex items-center gap-2.5">
+          
+          <!-- Search Shortcut Button -->
+          <button onclick="app.focusQuickSearch()" class="hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-ink-500 bg-stone-100/80 hover:bg-stone-200/80 border border-stone-200 transition-colors">
+            <i data-lucide="search" class="w-3.5 h-3.5"></i>
+            <span>Quick search...</span>
+            <kbd class="px-1.5 py-0.5 text-[9px] bg-white border border-stone-300 rounded shadow-xs text-stone-500">⌘K</kbd>
+          </button>
+
+          <!-- Notification Bell -->
+          <div class="relative hidden" id="notif-wrapper">
+            <button onclick="app.toggleNotifDropdown()" class="w-10 h-10 rounded-xl flex items-center justify-center text-ink-700 hover:bg-stone-200/70 border border-stone-200/60 relative transition-all" title="Notifications">
+              <i data-lucide="bell" class="w-4 h-4"></i>
+              <span id="notif-badge" class="hidden absolute top-2 right-2 w-2.5 h-2.5 bg-rose-500 ring-2 ring-white rounded-full"></span>
+            </button>
+            <div id="notif-dropdown" class="hidden absolute right-0 top-full mt-3 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl border border-stone-200/90 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div class="flex items-center justify-between px-5 py-4 border-b border-stone-100 bg-parchment-50">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="bell-ring" class="w-4 h-4 text-emerald-800"></i>
+                  <span class="font-serif font-bold text-base text-ink-900">Notifications</span>
+                </div>
+                <button onclick="app.markAllNotifsRead()" class="text-xs text-emerald-700 hover:text-emerald-900 font-bold transition-colors">Mark all read</button>
+              </div>
+              <div id="notif-list" class="max-h-80 overflow-y-auto divide-y divide-stone-100"></div>
+            </div>
+          </div>
+
+          <!-- Guest State -->
+          <div id="auth-guest" class="flex items-center gap-2">
+            <button onclick="app.openModal('login-modal')" class="px-4 py-2 text-xs font-bold text-ink-700 hover:text-ink-900 hover:bg-stone-100 rounded-xl transition-all">
+              Sign In
+            </button>
+            <button onclick="app.openModal('register-modal')" class="flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold text-white bg-gradient-to-r from-emerald-800 to-emerald-900 hover:from-emerald-700 hover:to-emerald-800 rounded-xl shadow-md shadow-emerald-900/20 transition-all hover:scale-[1.02]">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-300"></i>
+              <span>Get Library Card</span>
+            </button>
+          </div>
+
+          <!-- Logged In User State -->
+          <div id="auth-user" class="hidden flex items-center gap-2">
+            <button onclick="app.navigate('profile')" class="flex items-center gap-2.5 p-1 sm:pr-3 rounded-2xl hover:bg-stone-200/60 border border-stone-200/80 transition-all">
+              <div class="relative">
+                <img id="user-avatar" src="" alt="User" class="w-8 h-8 rounded-xl object-cover ring-2 ring-emerald-700/20">
+                <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 ring-2 ring-white rounded-full"></span>
+              </div>
+              <div class="hidden sm:block text-left">
+                <p id="user-name-display" class="text-xs font-extrabold text-ink-900 leading-tight">Member</p>
+                <p id="user-role-badge" class="text-[9px] font-bold text-emerald-700 uppercase tracking-widest leading-none">Patron</p>
+              </div>
+            </button>
+            <button onclick="app.logout()" class="w-9 h-9 rounded-xl flex items-center justify-center text-ink-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all" title="Sign Out">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Mobile Toggle -->
+          <button onclick="app.toggleMobileMenu()" class="md:hidden w-10 h-10 rounded-xl flex items-center justify-center text-ink-700 hover:bg-stone-100 border border-stone-200">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Mobile Navigation Drawer -->
+      <div id="mobile-menu" class="hidden md:hidden pt-4 pb-2 border-t border-stone-200/60 mt-3 grid grid-cols-2 gap-2">
+        <button onclick="app.navigate('home');app.toggleMobileMenu()" class="flex items-center gap-2 p-3 rounded-xl text-xs font-bold text-ink-800 bg-stone-100 hover:bg-stone-200">
+          <i data-lucide="compass" class="w-4 h-4 text-emerald-800"></i> Discover
+        </button>
+        <button onclick="app.navigate('library');app.toggleMobileMenu()" class="flex items-center gap-2 p-3 rounded-xl text-xs font-bold text-ink-800 bg-stone-100 hover:bg-stone-200">
+          <i data-lucide="book-open" class="w-4 h-4 text-emerald-800"></i> Library Stacks
+        </button>
+        <button onclick="app.navigate('donate');app.toggleMobileMenu()" class="flex items-center gap-2 p-3 rounded-xl text-xs font-bold text-ink-800 bg-stone-100 hover:bg-stone-200">
+          <i data-lucide="heart-handshake" class="w-4 h-4 text-emerald-800"></i> Donate
+        </button>
+        <button onclick="app.navigate('exchanges');app.toggleMobileMenu()" class="flex items-center gap-2 p-3 rounded-xl text-xs font-bold text-ink-800 bg-stone-100 hover:bg-stone-200">
+          <i data-lucide="arrow-left-right" class="w-4 h-4 text-emerald-800"></i> Exchange
+        </button>
+        <button id="admin-mobile-btn" onclick="app.navigate('admin');app.toggleMobileMenu()" class="col-span-2 hidden flex items-center justify-center gap-2 p-3 rounded-xl text-xs font-extrabold text-amber-900 bg-amber-100 border border-amber-300">
+          <i data-lucide="shield-check" class="w-4 h-4"></i> Librarian Console
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ============================================================== -->
+  <!-- OVERDUE ALERT BANNER -->
+  <!-- ============================================================== -->
+  <div id="overdue-banner" class="hidden max-w-7xl mx-auto px-4 sm:px-6 mt-4">
+    <div class="bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-300 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center flex-shrink-0">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold text-rose-900 uppercase tracking-wider">Overdue Loan Notification</h4>
+          <p id="overdue-banner-text" class="text-xs text-rose-700 font-medium">You have books that have exceeded their borrowing period.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="app.navigate('profile')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors">
+          Resolve Loans
+        </button>
+        <button onclick="document.getElementById('overdue-banner').classList.add('hidden')" class="p-2 text-rose-400 hover:text-rose-700">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MAIN APP ROUTE CONTAINER -->
+  <!-- ============================================================== -->
+  <main id="app-content" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-opacity duration-300"></main>
+
+  <!-- ============================================================== -->
+  <!-- LUXURIOUS EDITORIAL FOOTER -->
+  <!-- ============================================================== -->
+  <footer class="mt-28 bg-ink-900 text-stone-300 border-t border-ink-800 relative overflow-hidden">
+    <div class="absolute -right-20 -bottom-20 w-96 h-96 bg-emerald-950 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-12 mb-16">
+        
+        <div class="md:col-span-2 space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-emerald-800 flex items-center justify-center text-white shadow-md">
+              <i data-lucide="book-marked" class="w-5 h-5 text-emerald-300"></i>
+            </div>
+            <span class="font-serif font-black text-2xl text-white">BookBridge</span>
+          </div>
+          <p class="text-stone-400 text-sm leading-relaxed max-w-sm">
+            A free, open digital public library and peer-to-peer book exchange system. Reimagining community reading, open access to literature, and local sharing.
+          </p>
+          <div class="flex items-center gap-3 pt-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-800">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              SQLite ORM Connected
+            </span>
+            <span class="text-xs text-stone-500 font-mono">RESTful API 2.0</span>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-serif font-bold text-white text-base mb-4">Library Stacks</h4>
+          <ul class="space-y-2.5 text-xs text-stone-400 font-medium">
+            <li><button onclick="app.navigate('library')" class="hover:text-emerald-400 transition-colors">Digital Catalog</button></li>
+            <li><button onclick="app.navigate('library','?category=fiction')" class="hover:text-emerald-400 transition-colors">Fiction &amp; Literature</button></li>
+            <li><button onclick="app.navigate('library','?category=science-technology')" class="hover:text-emerald-400 transition-colors">Science &amp; Tech</button></li>
+            <li><button onclick="app.navigate('library','?category=philosophy')" class="hover:text-emerald-400 transition-colors">Philosophy</button></li>
+            <li><button onclick="app.navigate('library','?category=history-biography')" class="hover:text-emerald-400 transition-colors">History &amp; Memoir</button></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="font-serif font-bold text-white text-base mb-4">Community</h4>
+          <ul class="space-y-2.5 text-xs text-stone-400 font-medium">
+            <li><button onclick="app.navigate('donate')" class="hover:text-emerald-400 transition-colors">Donate Pre-loved Books</button></li>
+            <li><button onclick="app.navigate('exchanges')" class="hover:text-emerald-400 transition-colors">Book Exchange Market</button></li>
+            <li><button onclick="app.openModal('register-modal')" class="hover:text-emerald-400 transition-colors">Library Card Registration</button></li>
+            <li><button onclick="app.navigate('profile')" class="hover:text-emerald-400 transition-colors">My Reading Stash</button></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="font-serif font-bold text-white text-base mb-4">Demo Credentials</h4>
+          <div class="bg-ink-800/80 rounded-2xl p-4 border border-ink-700/60 space-y-2 text-xs">
+            <div>
+              <p class="font-bold text-amber-300">Head Librarian</p>
+              <p class="text-[11px] text-stone-400 font-mono">admin@bookbridge.org</p>
+            </div>
+            <div class="pt-2 border-t border-ink-700/60">
+              <p class="font-bold text-emerald-300">Reader Sarah</p>
+              <p class="text-[11px] text-stone-400 font-mono">sarah@example.com</p>
+            </div>
+            <button onclick="app.openModal('login-modal')" class="w-full mt-2 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white text-[11px] font-bold transition-colors">
+              1-Click Demo Fill
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="pt-8 border-t border-ink-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
+        <p>© 2026 BookBridge Digital Public Library. Designed with winner mindset.</p>
+        <p class="flex items-center gap-2">
+          <span>Engineered with Python Flask &amp; Modern UI</span>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================================== -->
+  <!-- FLOATING TOAST STACK -->
+  <!-- ============================================================== -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 max-w-sm pointer-events-none"></div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: SIGN IN -->
+  <!-- ============================================================== -->
+  <div id="login-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/70 backdrop-blur-md">
+    <div class="bg-white rounded-3xl p-7 sm:p-9 max-w-md w-full shadow-2xl border border-stone-100 relative overflow-hidden">
+      <div class="flex justify-between items-start mb-6">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 mb-2 uppercase tracking-wider">
+            Patron Access
+          </span>
+          <h3 class="font-serif font-black text-2xl text-ink-900">Sign in to Library</h3>
+          <p class="text-xs text-stone-500 mt-1">Access your loans, reserve books, and exchange</p>
+        </div>
+        <button onclick="app.closeModal('login-modal')" class="w-8 h-8 rounded-xl bg-stone-100 text-stone-400 hover:text-stone-700 hover:bg-stone-200 flex items-center justify-center transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form onsubmit="app.handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-[11px] font-bold text-ink-700 uppercase tracking-wider mb-1.5">Email Address</label>
+          <div class="relative">
+            <i data-lucide="mail" class="w-4 h-4 text-stone-400 absolute left-3.5 top-3.5"></i>
+            <input type="email" id="login-email" required placeholder="you@example.com" class="w-full pl-10 pr-4 py-3 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent transition-all">
+          </div>
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-ink-700 uppercase tracking-wider mb-1.5">Password</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 text-stone-400 absolute left-3.5 top-3.5"></i>
+            <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-10 pr-4 py-3 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent transition-all">
+          </div>
+        </div>
+        <button type="submit" id="login-btn" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-800 to-emerald-950 text-white font-extrabold text-sm hover:from-emerald-700 hover:to-emerald-900 shadow-lg shadow-emerald-900/20 transition-all flex items-center justify-center gap-2">
+          <span>Enter Library</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </form>
+
+      <!-- 1-Click Demo Profiles -->
+      <div class="mt-6 pt-5 border-t border-stone-100">
+        <p class="text-[10px] font-extrabold uppercase tracking-widest text-stone-400 text-center mb-3">Instant Demo Sign-in</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="app.fillDemo('admin@bookbridge.org','admin123')" class="p-3 rounded-2xl border border-amber-200 bg-amber-50/70 hover:bg-amber-100 text-left transition-colors">
+            <div class="flex items-center gap-1.5 text-amber-900 font-extrabold text-xs">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-700"></i> Librarian
+            </div>
+            <p class="text-[10px] text-amber-700 font-mono mt-0.5 truncate">admin@bookbridge.org</p>
+          </button>
+          <button onclick="app.fillDemo('sarah@example.com','user123')" class="p-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 text-left transition-colors">
+            <div class="flex items-center gap-1.5 text-emerald-900 font-extrabold text-xs">
+              <i data-lucide="user" class="w-3.5 h-3.5 text-emerald-700"></i> Reader Sarah
+            </div>
+            <p class="text-[10px] text-emerald-700 font-mono mt-0.5 truncate">sarah@example.com</p>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: REGISTER -->
+  <!-- ============================================================== -->
+  <div id="register-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/70 backdrop-blur-md">
+    <div class="bg-white rounded-3xl p-7 sm:p-9 max-w-md w-full shadow-2xl border border-stone-100 relative">
+      <div class="flex justify-between items-start mb-6">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 mb-2 uppercase tracking-wider">
+            Free Card
+          </span>
+          <h3 class="font-serif font-black text-2xl text-ink-900">Join BookBridge</h3>
+          <p class="text-xs text-stone-500 mt-1">Get instant borrowing privileges across all stacks</p>
+        </div>
+        <button onclick="app.closeModal('register-modal')" class="w-8 h-8 rounded-xl bg-stone-100 text-stone-400 hover:text-stone-700 flex items-center justify-center transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form onsubmit="app.handleRegister(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-[11px] font-bold text-ink-700 uppercase tracking-wider mb-1">Full Name</label>
+          <input type="text" id="reg-name" required placeholder="Alexander Vance" class="w-full px-4 py-2.5 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-ink-700 uppercase tracking-wider mb-1">Email Address</label>
+          <input type="email" id="reg-email" required placeholder="alex@example.com" class="w-full px-4 py-2.5 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold text-ink-700 uppercase tracking-wider mb-1">Password</label>
+            <input type="password" id="reg-password" minlength="6" required placeholder="Min 6 chars" class="w-full px-4 py-2.5 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-ink-700 uppercase tracking-wider mb-1">Phone</label>
+            <input type="text" id="reg-phone" placeholder="+1 555-0192" class="w-full px-4 py-2.5 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700">
+          </div>
+        </div>
+        <button type="submit" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-800 to-emerald-950 text-white font-extrabold text-sm hover:from-emerald-700 hover:to-emerald-900 shadow-md shadow-emerald-900/20 transition-all mt-2">
+          Issue My Free Library Card
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: BORROW BOOK -->
+  <!-- ============================================================== -->
+  <div id="borrow-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/70 backdrop-blur-md">
+    <div class="bg-white rounded-3xl p-7 max-w-md w-full shadow-2xl border border-stone-100">
+      <div class="flex justify-between items-center mb-5">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+            <i data-lucide="bookmark-check" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-serif font-bold text-xl text-ink-900">Borrow Request</h3>
+        </div>
+        <button onclick="app.closeModal('borrow-modal')" class="w-8 h-8 rounded-xl bg-stone-100 text-stone-400 hover:text-stone-700 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div id="borrow-book-info" class="p-4 bg-parchment-100/70 rounded-2xl mb-5 border border-parchment-200"></div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-ink-700 uppercase tracking-wider mb-2">Loan Duration</label>
+          <div class="grid grid-cols-4 gap-2">
+            <button onclick="app.selectBorrowDays(7)" data-days="7" class="borrow-day-btn py-3 text-xs font-extrabold rounded-2xl border border-stone-200 hover:border-emerald-700 transition-colors">7 Days</button>
+            <button onclick="app.selectBorrowDays(14)" data-days="14" class="borrow-day-btn py-3 text-xs font-extrabold rounded-2xl border-2 border-emerald-800 bg-emerald-800 text-white">14 Days</button>
+            <button onclick="app.selectBorrowDays(21)" data-days="21" class="borrow-day-btn py-3 text-xs font-extrabold rounded-2xl border border-stone-200 hover:border-emerald-700 transition-colors">21 Days</button>
+            <button onclick="app.selectBorrowDays(28)" data-days="28" class="borrow-day-btn py-3 text-xs font-extrabold rounded-2xl border border-stone-200 hover:border-emerald-700 transition-colors">28 Days</button>
+          </div>
+        </div>
+        <p class="text-[11px] text-stone-500 leading-relaxed">
+          ⚡ Books must be returned or renewed prior to the due date. Clean record guarantees uninterrupted community borrowing privileges.
+        </p>
+        <button onclick="app.submitBorrowRequest()" class="w-full py-3.5 rounded-2xl bg-emerald-800 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          <span>Confirm Borrowing Request</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: EXCHANGE PROPOSAL -->
+  <!-- ============================================================== -->
+  <div id="exchange-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/70 backdrop-blur-md">
+    <div class="bg-white rounded-3xl p-7 max-w-md w-full shadow-2xl border border-stone-100">
+      <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+            <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-serif font-bold text-xl text-ink-900">Propose Book Swap</h3>
+        </div>
+        <button onclick="app.closeModal('exchange-modal')" class="w-8 h-8 rounded-xl bg-stone-100 text-stone-400 hover:text-stone-700 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div id="exchange-listing-info" class="p-4 bg-indigo-50/70 rounded-2xl mb-4 border border-indigo-100"></div>
+
+      <form onsubmit="app.submitExchangeProposal(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold text-ink-700 uppercase tracking-wider mb-1">Book You Are Offering *</label>
+          <input type="text" id="ex-offer-title" required placeholder="e.g. Dune" class="w-full px-4 py-2.5 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-ink-700 uppercase tracking-wider mb-1">Author *</label>
+            <input type="text" id="ex-offer-author" required placeholder="Frank Herbert" class="w-full px-4 py-2.5 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-ink-700 uppercase tracking-wider mb-1">Condition *</label>
+            <select id="ex-offer-condition" class="w-full px-4 py-2.5 rounded-2xl border border-stone-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600">
+              <option>Like New</option><option selected>Good</option><option>Fair</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-ink-700 uppercase tracking-wider mb-1">Note to Owner</label>
+          <textarea id="ex-message" rows="2" placeholder="Let them know why they will love your book..." class="w-full px-4 py-2.5 rounded-2xl border border-stone-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-600"></textarea>
+        </div>
+        <button type="submit" class="w-full py-3.5 rounded-2xl bg-indigo-700 hover:bg-indigo-600 text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          <span>Send Swap Proposal</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: WRITE REVIEW -->
+  <!-- ============================================================== -->
+  <div id="review-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/70 backdrop-blur-md">
+    <div class="bg-white rounded-3xl p-7 max-w-md w-full shadow-2xl border border-stone-100">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-serif font-bold text-xl text-ink-900">Review &amp; Rating</h3>
+        <button onclick="app.closeModal('review-modal')" class="w-8 h-8 rounded-xl bg-stone-100 text-stone-400 hover:text-stone-700 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div id="review-book-info" class="mb-4 text-xs font-medium text-stone-600"></div>
+      <form onsubmit="app.submitReview(event)" class="space-y-4">
+        <div class="text-center py-2 bg-stone-50 rounded-2xl">
+          <label class="block text-[11px] font-extrabold uppercase tracking-widest text-stone-500 mb-2">Tap Star to Rate</label>
+          <div class="flex justify-center gap-2" id="star-selector">
+            <button type="button" onclick="app.setReviewRating(1)" data-star="1" class="star-btn text-4xl text-stone-300 hover:scale-125 transition-transform">★</button>
+            <button type="button" onclick="app.setReviewRating(2)" data-star="2" class="star-btn text-4xl text-stone-300 hover:scale-125 transition-transform">★</button>
+            <button type="button" onclick="app.setReviewRating(3)" data-star="3" class="star-btn text-4xl text-stone-300 hover:scale-125 transition-transform">★</button>
+            <button type="button" onclick="app.setReviewRating(4)" data-star="4" class="star-btn text-4xl text-stone-300 hover:scale-125 transition-transform">★</button>
+            <button type="button" onclick="app.setReviewRating(5)" data-star="5" class="star-btn text-4xl text-stone-300 hover:scale-125 transition-transform">★</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-ink-700 uppercase tracking-wider mb-1.5">Your Thoughts</label>
+          <textarea id="review-text" rows="4" placeholder="What resonated with you? Character arcs, pacing, ideas..." class="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-700"></textarea>
+        </div>
+        <button type="submit" class="w-full py-3.5 rounded-2xl bg-emerald-800 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-md transition-all">
+          Publish Reader Review
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- APPLICATION CORE SCRIPT -->
+  <!-- ============================================================== -->
+  <script>
+    const app = {
+      user: null,
+      currentView: 'home',
+      activeBorrowBookId: null,
+      activeBorrowCopyId: null,
+      borrowDays: 14,
+      activeExchangeListingId: null,
+      activeReviewBookId: null,
+      reviewRating: 0,
+      searchDebounceTimer: null,
+
+      async init() {
+        await this.checkAuth();
+        this.navigate('home');
+        
+        // Global keyboard shortcut
+        document.addEventListener('keydown', (e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            this.focusQuickSearch();
+          }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('#notif-wrapper')) {
+            const dd = document.getElementById('notif-dropdown');
+            if (dd) dd.classList.add('hidden');
+          }
+        });
+      },
+
+      renderIcons() {
+        setTimeout(() => {
+          if (window.lucide) {
+            lucide.createIcons();
+          }
+        }, 10);
+      },
+
+      focusQuickSearch() {
+        this.navigate('library');
+        setTimeout(() => {
+          const el = document.getElementById('lib-search');
+          if (el) el.focus();
+        }, 200);
+      },
+
+      // TOAST NOTIFICATIONS
+      toast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        const colors = {
+          success: 'bg-emerald-950/95 border-emerald-800 text-emerald-200',
+          error: 'bg-rose-950/95 border-rose-800 text-rose-200',
+          warning: 'bg-amber-950/95 border-amber-800 text-amber-200',
+          info: 'bg-ink-900/95 border-ink-800 text-stone-200'
+        };
+        const icons = {
+          success: '<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>',
+          error: '<i data-lucide="alert-circle" class="w-4 h-4 text-rose-400"></i>',
+          warning: '<i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>',
+          info: '<i data-lucide="info" class="w-4 h-4 text-sky-400"></i>'
+        };
+
+        t.className = `pointer-events-auto px-4 py-3 rounded-2xl shadow-2xl border backdrop-blur-md text-xs font-semibold flex items-center gap-3 transition-all transform translate-y-4 duration-300 ${colors[type] || colors.info}`;
+        t.innerHTML = `
+          <span>${icons[type] || icons.info}</span>
+          <span class="flex-1">${message}</span>
+          <button onclick="this.parentElement.remove()" class="text-stone-400 hover:text-white">✕</button>
+        `;
+        container.appendChild(t);
+        this.renderIcons();
+        requestAnimationFrame(() => t.classList.remove('translate-y-4'));
+        setTimeout(() => t && t.remove(), 4500);
+      },
+
+      openModal(id) {
+        const el = document.getElementById(id);
+        if (el) {
+          el.classList.remove('hidden');
+          this.renderIcons();
+        }
+      },
+      closeModal(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      },
+
+      toggleMobileMenu() {
+        document.getElementById('mobile-menu').classList.toggle('hidden');
+        this.renderIcons();
+      },
+
+      formatDate(iso) {
+        if (!iso) return 'N/A';
+        const d = new Date(iso);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      },
+
+      daysUntil(iso) {
+        if (!iso) return null;
+        const now = new Date();
+        const due = new Date(iso);
+        return Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+      },
+
+      renderStars(rating) {
+        const r = Math.round(rating || 0);
+        let s = '';
+        for (let i = 1; i <= 5; i++) {
+          s += `<span class="${i <= r ? 'text-amber-400' : 'text-stone-300'} text-xs">★</span>`;
+        }
+        return s;
+      },
+
+      availabilityBadge(count) {
+        if (count === 0) {
+          return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Borrowed</span>`;
+        }
+        if (count === 1) {
+          return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 1 Copy Left</span>`;
+        }
+        return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ${count} Available</span>`;
+      },
+
+      statusBadge(status) {
+        const map = {
+          active: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+          overdue: 'bg-rose-100 text-rose-800 border-rose-300',
+          return_pending: 'bg-amber-100 text-amber-800 border-amber-200',
+          returned: 'bg-stone-100 text-stone-700 border-stone-200',
+          pending: 'bg-sky-100 text-sky-800 border-sky-200',
+          approved: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+          rejected: 'bg-rose-100 text-rose-800 border-rose-200',
+          available: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+          exchanged: 'bg-indigo-100 text-indigo-800 border-indigo-200'
+        };
+        const labels = {
+          return_pending: 'Return Pending',
+          active: 'Active Loan'
+        };
+        return `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${map[status] || 'bg-stone-100 text-stone-700'}">${labels[status] || status.replace(/_/g,' ').toUpperCase()}</span>`;
+      },
+
+      // ==================== AUTH ====================
+      async checkAuth() {
+        try {
+          const res = await fetch('/api/auth/me', { credentials: 'include' });
+          const data = await res.json();
+          if (data.authenticated && data.user) {
+            this.user = data.user;
+            document.getElementById('auth-guest').classList.add('hidden');
+            document.getElementById('auth-user').classList.remove('hidden');
+            document.getElementById('notif-wrapper').classList.remove('hidden');
+            document.getElementById('user-avatar').src = this.user.avatar;
+            document.getElementById('user-name-display').innerText = this.user.name.split(' ')[0];
+            document.getElementById('user-role-badge').innerText = this.user.role === 'admin' ? 'Librarian' : 'Patron';
+
+            if (this.user.role === 'admin') {
+              document.getElementById('admin-nav-btn').classList.remove('hidden');
+              document.getElementById('admin-mobile-btn')?.classList.remove('hidden');
+            } else {
+              document.getElementById('admin-nav-btn').classList.add('hidden');
+              document.getElementById('admin-mobile-btn')?.classList.add('hidden');
+            }
+            this.loadNotifications();
+            this.checkOverdue();
+          } else {
+            this.user = null;
+            document.getElementById('auth-guest').classList.remove('hidden');
+            document.getElementById('auth-user').classList.add('hidden');
+            document.getElementById('notif-wrapper').classList.add('hidden');
+            document.getElementById('admin-nav-btn').classList.add('hidden');
+            document.getElementById('admin-mobile-btn')?.classList.add('hidden');
+            document.getElementById('overdue-banner').classList.add('hidden');
+          }
+        } catch (e) {
+          console.error('Auth verification failed', e);
+        }
+        this.renderIcons();
+      },
+
+      async checkOverdue() {
+        if (!this.user) return;
+        try {
+          const res = await fetch('/api/borrowings/my', { credentials: 'include' });
+          const data = await res.json();
+          if (data.success) {
+            const overdue = (data.transactions || []).filter(t => t.status === 'overdue' || t.is_overdue);
+            if (overdue.length > 0) {
+              document.getElementById('overdue-banner').classList.remove('hidden');
+              document.getElementById('overdue-banner-text').textContent =
+                `You have ${overdue.length} overdue title${overdue.length > 1 ? 's' : ''} (e.g. ${overdue[0].book_title}). Please submit a return request to maintain active borrowing privileges.`;
+              this.renderIcons();
+            }
+          }
+        } catch (e) {}
+      },
+
+      fillDemo(email, pass) {
+        document.getElementById('login-email').value = email;
+        document.getElementById('login-password').value = pass;
+      },
+
+      async handleLogin(e) {
+        e.preventDefault();
+        const btn = document.getElementById('login-btn');
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Entering Stacks...</span>`;
+        this.renderIcons();
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: document.getElementById('login-email').value,
+              password: document.getElementById('login-password').value
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            this.toast(`Welcome back, ${data.user.name}! 📚`, 'success');
+            this.closeModal('login-modal');
+            await this.checkAuth();
+            this.navigate(this.currentView);
+          } else {
+            this.toast(data.message || 'Invalid credentials', 'error');
+          }
+        } catch (err) {
+          this.toast('Login network error', 'error');
+        } finally {
+          btn.innerHTML = `<span>Enter Library</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+          this.renderIcons();
+        }
+      },
+
+      async handleRegister(e) {
+        e.preventDefault();
+        try {
+          const res = await fetch('/api/auth/register', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: document.getElementById('reg-name').value,
+              email: document.getElementById('reg-email').value,
+              password: document.getElementById('reg-password').value,
+              phone: document.getElementById('reg-phone').value
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+            this.toast('🎉 Welcome to BookBridge! Your digital library card is ready.', 'success');
+            this.closeModal('register-modal');
+            await this.checkAuth();
+            this.navigate('library');
+          } else {
+            this.toast(data.message || 'Registration failed', 'error');
+          }
+        } catch (err) {
+          this.toast('Registration network error', 'error');
+        }
+      },
+
+      async logout() {
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+        this.user = null;
+        this.toast('Signed out from BookBridge', 'info');
+        await this.checkAuth();
+        this.navigate('home');
+      },
+
+      // NOTIFICATIONS
+      async loadNotifications() {
+        if (!this.user) return;
+        try {
+          const res = await fetch('/api/notifications', { credentials: 'include' });
+          const data = await res.json();
+          if (data.success) {
+            const count = data.unread_count || 0;
+            const badge = document.getElementById('notif-badge');
+            if (count > 0) badge.classList.remove('hidden');
+            else badge.classList.add('hidden');
+
+            const list = document.getElementById('notif-list');
+            const notifs = data.notifications || [];
+            list.innerHTML = notifs.length ? notifs.map(n => `
+              <div class="p-4 hover:bg-stone-50 transition-colors ${!n.is_read ? 'bg-emerald-50/50' : ''}">
+                <div class="flex items-start gap-3">
+                  <div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!n.is_read ? 'bg-emerald-600' : 'bg-transparent'}"></div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-extrabold text-xs text-ink-900 leading-tight">${n.title}</p>
+                    <p class="text-[11px] text-stone-500 mt-0.5 leading-relaxed">${n.message}</p>
+                    <p class="text-[9px] text-stone-400 mt-1 font-mono">${this.formatDate(n.created_at)}</p>
+                  </div>
+                </div>
+              </div>
+            `).join('') : '<p class="text-center text-stone-400 text-xs py-8">No notifications at this time.</p>';
+          }
+        } catch (e) {}
+      },
+
+      toggleNotifDropdown() {
+        document.getElementById('notif-dropdown').classList.toggle('hidden');
+      },
+
+      async markAllNotifsRead() {
+        await fetch('/api/notifications/read-all', { method: 'POST', credentials: 'include' });
+        this.toast('Notifications cleared', 'success');
+        this.loadNotifications();
+      },
+
+      // NAVIGATION
+      navigate(view, param = null) {
+        this.currentView = view;
+        document.querySelectorAll('.nav-item').forEach(b => {
+          if (b.dataset.nav === view) {
+            b.classList.add('bg-white', 'text-ink-900', 'shadow-xs');
+            b.classList.remove('text-ink-700');
+          } else {
+            b.classList.remove('bg-white', 'text-ink-900', 'shadow-xs');
+            b.classList.add('text-ink-700');
+          }
+        });
+
+        const main = document.getElementById('app-content');
+        main.style.opacity = '0';
+
+        setTimeout(() => {
+          const views = {
+            home: () => this.renderHome(main),
+            library: () => this.renderLibrary(main, param),
+            'book-detail': () => this.renderBookDetail(main, param),
+            donate: () => this.renderDonate(main),
+            exchanges: () => this.renderExchanges(main),
+            admin: () => this.renderAdmin(main),
+            profile: () => this.renderProfile(main)
+          };
+          (views[view] || views.home)();
+          main.style.opacity = '1';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          this.renderIcons();
+        }, 150);
+      },
+
+      // =================================================================
+      // 1. HOME VIEW (DISCOVER) - VISUAL SHOWCASE
+      // =================================================================
+      async renderHome(container) {
+        container.innerHTML = `
+          <div class="space-y-6">
+            <div class="h-96 skeleton-shimmer rounded-3xl"></div>
+            <div class="grid grid-cols-4 gap-4">
+              <div class="h-44 skeleton-shimmer rounded-2xl"></div>
+              <div class="h-44 skeleton-shimmer rounded-2xl"></div>
+              <div class="h-44 skeleton-shimmer rounded-2xl"></div>
+              <div class="h-44 skeleton-shimmer rounded-2xl"></div>
+            </div>
+          </div>
+        `;
+
+        try {
+          const [statsRes, recRes] = await Promise.all([
+            fetch('/api/stats/public'),
+            fetch('/api/recommendations', { credentials: 'include' })
+          ]);
+          const statsData = await statsRes.json();
+          const recData = recRes.ok ? await recRes.json() : { recommendations: [] };
+          const stats = statsData.stats || {};
+          const popular = statsData.popular_books || [];
+          const categories = statsData.categories || [];
+          const recs = recData.recommendations || [];
+
+          container.innerHTML = `
+            <div class="space-y-24">
+
+              <!-- HERO: EDITORIAL LUXURY BANNER WITH 3D BOOK STACKS -->
+              <section class="relative rounded-[2.5rem] bg-gradient-to-br from-ink-900 via-emerald-950 to-ink-900 text-white overflow-hidden p-8 sm:p-14 lg:p-20 shadow-2xl border border-emerald-900/40">
+                <!-- Ambient Glow orbs -->
+                <div class="absolute -top-32 -left-32 w-96 h-96 bg-emerald-600/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-gold-600/15 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+                  
+                  <div class="lg:col-span-7 space-y-6 text-left">
+                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-emerald-300 border border-white/15 backdrop-blur-md text-xs font-bold">
+                      <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-300"></i>
+                      <span>Free Community Public Library &amp; Direct Swaps</span>
+                    </div>
+
+                    <h1 class="text-4xl sm:text-6xl lg:text-7xl font-serif font-black tracking-tight leading-[1.08] text-white">
+                      Where Great Books<br>
+                      <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-100 to-amber-200">
+                        Find Their People.
+                      </span>
+                    </h1>
+
+                    <p class="text-stone-300 text-base sm:text-lg max-w-xl leading-relaxed font-normal">
+                      Discover public catalog editions, donate books you’ve loved, and swap literary treasures with your neighbors without fees.
+                    </p>
+
+                    <!-- Interactive Live Hero Search -->
+                    <div class="pt-2 max-w-xl">
+                      <div class="relative bg-white/95 rounded-2xl p-1.5 shadow-2xl flex items-center gap-2 border border-stone-200">
+                        <i data-lucide="search" class="w-5 h-5 text-stone-400 ml-3"></i>
+                        <input type="text" id="hero-search-input" placeholder="Search by title, author, or ISBN..." 
+                          class="flex-1 py-2.5 text-sm text-ink-900 placeholder:text-stone-400 focus:outline-none bg-transparent"
+                          oninput="app.handleHeroSearch(this.value)"
+                          onkeydown="if(event.key==='Enter') app.navigate('library', this.value)">
+                        <button onclick="app.navigate('library', document.getElementById('hero-search-input').value)" 
+                          class="px-5 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white font-extrabold text-xs transition-all flex items-center gap-1.5">
+                          <span>Browse</span>
+                          <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                        </button>
+                      </div>
+
+                      <!-- Autocomplete Dropdown -->
+                      <div id="hero-autocomplete" class="hidden absolute left-0 right-0 max-w-xl mt-2 bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden z-30"></div>
+
+                      <!-- Quick Tags -->
+                      <div class="flex items-center gap-2 mt-4 text-xs flex-wrap">
+                        <span class="text-stone-400 text-[11px] font-bold uppercase tracking-wider">Trending:</span>
+                        ${['Sapiens', 'Clean Code', '1984', 'Meditations'].map(term => `
+                          <button onclick="app.navigate('library', '${term}')" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-stone-300 text-xs font-semibold transition-colors border border-white/10">
+                            ${term}
+                          </button>
+                        `).join('')}
+                      </div>
+                    </div>
+
+                    <!-- Micro Metric Highlights -->
+                    <div class="grid grid-cols-3 gap-6 pt-6 border-t border-white/10">
+                      <div>
+                        <p class="font-serif font-black text-2xl text-white">${stats.total_books || 0}</p>
+                        <p class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Curated Titles</p>
+                      </div>
+                      <div>
+                        <p class="font-serif font-black text-2xl text-emerald-300">${stats.available_books || 0}</p>
+                        <p class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Available Now</p>
+                      </div>
+                      <div>
+                        <p class="font-serif font-black text-2xl text-amber-300">${stats.total_members || 0}</p>
+                        <p class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Active Patrons</p>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <!-- 3D Perspective Floating Book Showcase -->
+                  <div class="lg:col-span-5 relative flex items-center justify-center">
+                    <div class="relative w-full max-w-xs sm:max-w-sm h-[400px]">
+                      
+                      <!-- Decorative backdrop book (Rotated) -->
+                      <div class="absolute -top-3 -left-6 w-48 sm:w-56 h-72 sm:h-80 rounded-2xl bg-gradient-to-tr from-amber-700 to-amber-900 shadow-2xl -rotate-12 opacity-70 transform transition-transform hover:-rotate-6 duration-500 overflow-hidden border border-white/20">
+                        <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=400" class="w-full h-full object-cover mix-blend-overlay">
+                      </div>
+
+                      <!-- Secondary book (Opposite rotation) -->
+                      <div class="absolute top-8 -right-4 w-48 sm:w-56 h-72 sm:h-80 rounded-2xl bg-gradient-to-tr from-sky-800 to-indigo-900 shadow-2xl rotate-12 opacity-80 transform transition-transform hover:rotate-6 duration-500 overflow-hidden border border-white/20">
+                        <img src="https://images.unsplash.com/photo-1532012164546-f432f2e3777a?auto=format&fit=crop&q=80&w=400" class="w-full h-full object-cover mix-blend-overlay">
+                      </div>
+
+                      <!-- Main Spotlight Book (Centered 3D) -->
+                      <div class="absolute inset-x-6 top-6 h-80 sm:h-96 rounded-2xl overflow-hidden shadow-book-hover z-20 book-cover-3d border border-white/30 cursor-pointer" onclick="app.navigate('book-detail', 1)">
+                        <div class="book-spine-line"></div>
+                        <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-6 flex flex-col justify-end">
+                          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500 text-white w-max mb-1">
+                            Featured Classic
+                          </span>
+                          <h3 class="font-serif font-black text-xl text-white">To Kill a Mockingbird</h3>
+                          <p class="text-xs text-stone-300">Harper Lee • 3 Physical Copies</p>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                </div>
+              </section>
+
+              <!-- CATEGORIES / SHELVES NAVIGATION -->
+              <section>
+                <div class="flex items-end justify-between mb-8">
+                  <div>
+                    <span class="text-xs font-extrabold text-emerald-800 uppercase tracking-widest">Library Wings</span>
+                    <h2 class="font-serif font-black text-3xl sm:text-4xl text-ink-900 mt-1">Explore By Category</h2>
+                  </div>
+                  <button onclick="app.navigate('library')" class="text-xs font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 group">
+                    <span>View all genres</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform"></i>
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                  ${categories.map(c => `
+                    <div onclick="app.navigate('library','?category=${c.slug}')" class="glass-card p-5 rounded-3xl border border-stone-200/70 hover:border-emerald-600/40 hover:shadow-elevated transition-all duration-300 cursor-pointer group text-center flex flex-col items-center">
+                      <div class="w-14 h-14 rounded-2xl bg-parchment-100 flex items-center justify-center text-emerald-800 mb-3 group-hover:scale-110 group-hover:bg-emerald-800 group-hover:text-white transition-all shadow-xs">
+                        <i data-lucide="${this.getCategoryIcon(c.slug)}" class="w-6 h-6"></i>
+                      </div>
+                      <h4 class="font-bold text-xs text-ink-900 group-hover:text-emerald-800 transition-colors leading-snug">${c.name}</h4>
+                      <p class="text-[10px] text-stone-400 mt-1 font-mono">${c.book_count} Volumes</p>
+                    </div>
+                  `).join('')}
+                </div>
+              </section>
+
+              <!-- SPOTLIGHT: RECOMMENDED & POPULAR COLLECTIONS -->
+              <section>
+                <div class="flex items-end justify-between mb-8">
+                  <div>
+                    <span class="text-xs font-extrabold text-emerald-800 uppercase tracking-widest">Selected For You</span>
+                    <h2 class="font-serif font-black text-3xl sm:text-4xl text-ink-900 mt-1">Recommended Reads</h2>
+                  </div>
+                  <button onclick="app.navigate('library')" class="text-xs font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 group">
+                    <span>Browse Stacks</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform"></i>
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                  ${(recs.length ? recs : popular).slice(0, 8).map(b => this.renderModernBookCard(b)).join('')}
+                </div>
+              </section>
+
+              <!-- COMMUNITY EXCHANGE MARKET TICKER -->
+              <section class="rounded-3xl bg-parchment-100/90 border border-parchment-200 p-8 sm:p-12 relative overflow-hidden">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                  <div class="md:col-span-2 space-y-3">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                      <i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i>
+                      Reader-to-Reader Marketplace
+                    </span>
+                    <h3 class="font-serif font-black text-2xl sm:text-3xl text-ink-900 leading-snug">
+                      Own a book you’ve finished? Swap it for one you’ve been dying to read.
+                    </h3>
+                    <p class="text-stone-600 text-sm max-w-xl">
+                      List your personal titles in the Exchange Hub. Fellow book lovers can propose fair swaps, connecting neighbors and breathing new life into old paperbacks.
+                    </p>
+                  </div>
+                  <div class="flex flex-col sm:flex-row md:flex-col gap-3">
+                    <button onclick="app.navigate('exchanges')" class="px-6 py-3.5 rounded-2xl bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-2">
+                      <i data-lucide="compass" class="w-4 h-4"></i>
+                      <span>Explore Exchange Market</span>
+                    </button>
+                    <button onclick="app.navigate('donate')" class="px-6 py-3.5 rounded-2xl bg-white hover:bg-stone-50 border border-stone-200 text-ink-800 font-extrabold text-xs shadow-xs transition-all flex items-center justify-center gap-2">
+                      <i data-lucide="gift" class="w-4 h-4 text-emerald-700"></i>
+                      <span>Donate to Public Library</span>
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+            </div>
+          `;
+          this.renderIcons();
+        } catch (e) {
+          container.innerHTML = `<div class="p-12 text-center text-stone-500">Failed to render home view: ${e.message}</div>`;
+        }
+      },
+
+      getCategoryIcon(slug) {
+        const map = {
+          'fiction': 'book-open',
+          'science-technology': 'cpu',
+          'history-biography': 'landmark',
+          'philosophy': 'compass',
+          'arts-design': 'palette',
+          'children-ya': 'smile'
+        };
+        return map[slug] || 'book';
+      },
+
+      async handleHeroSearch(q) {
+        const drop = document.getElementById('hero-autocomplete');
+        if (!q || q.length < 2) {
+          drop.classList.add('hidden');
+          return;
+        }
+        clearTimeout(this.searchDebounceTimer);
+        this.searchDebounceTimer = setTimeout(async () => {
+          try {
+            const res = await fetch(`/api/books?search=${encodeURIComponent(q)}&per_page=4`);
+            const data = await res.json();
+            const books = data.books || [];
+            if (!books.length) {
+              drop.classList.add('hidden');
+              return;
+            }
+            drop.innerHTML = books.map(b => `
+              <div onclick="app.navigate('book-detail', ${b.id}); document.getElementById('hero-autocomplete').classList.add('hidden')" class="p-3 hover:bg-stone-50 border-b border-stone-100 last:border-0 flex items-center gap-3 cursor-pointer">
+                <img src="${b.cover_image}" class="w-9 h-12 object-cover rounded-md shadow-xs">
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-xs text-ink-900 truncate">${b.title}</p>
+                  <p class="text-[11px] text-stone-500">${b.author} • ${b.category_name}</p>
+                </div>
+                ${this.availabilityBadge(b.available_copies_count)}
+              </div>
+            `).join('');
+            drop.classList.remove('hidden');
+          } catch (e) {}
+        }, 250);
+      },
+
+      // MODERN BOOK CARD COMPONENT
+      renderModernBookCard(b) {
+        return `
+          <div onclick="app.navigate('book-detail', ${b.id})" class="glass-card rounded-3xl p-3 border border-stone-200/80 hover:border-emerald-700/40 hover:shadow-elevated transition-all duration-300 cursor-pointer flex flex-col group">
+            
+            <!-- 3D Book Cover Container -->
+            <div class="relative w-full aspect-[3/4] rounded-2xl overflow-hidden mb-3 bg-stone-100 book-cover-3d">
+              <div class="book-spine-line"></div>
+              <img src="${b.cover_image}" alt="${b.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=400'">
+              
+              <!-- Top Badge -->
+              <div class="absolute top-2.5 right-2.5 z-20">
+                ${this.availabilityBadge(b.available_copies_count)}
+              </div>
+
+              <!-- Quick Action Hover Pill -->
+              <div class="absolute inset-x-3 bottom-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex justify-center">
+                <button onclick="event.stopPropagation(); app.navigate('book-detail', ${b.id})" class="px-4 py-2 rounded-xl bg-ink-900/90 text-white font-extrabold text-xs shadow-lg backdrop-blur-md flex items-center gap-1.5 hover:bg-emerald-800 transition-colors">
+                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  <span>Inspect Volume</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Meta details -->
+            <div class="px-1 flex-1 flex flex-col justify-between">
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800">${b.category_name}</span>
+                <h3 class="font-serif font-black text-sm text-ink-900 line-clamp-1 group-hover:text-emerald-800 transition-colors mt-0.5">${b.title}</h3>
+                <p class="text-xs text-stone-500 line-clamp-1">${b.author}</p>
+              </div>
+
+              <div class="flex items-center justify-between pt-3 mt-2 border-t border-stone-100">
+                <span class="text-[11px] font-mono text-stone-400">${b.publication_year || 2023}</span>
+                <span class="text-xs font-bold text-emerald-800 flex items-center gap-1">
+                  <span>Details</span>
+                  <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                </span>
+              </div>
+            </div>
+
+          </div>
+        `;
+      },
+
+      // =================================================================
+      // 2. DIGITAL LIBRARY (STACKS) VIEW
+      // =================================================================
+      async renderLibrary(container, param = null) {
+        let initSearch = '';
+        let initCategory = '';
+        if (param) {
+          if (param.startsWith('?category=')) initCategory = param.replace('?category=', '');
+          else initSearch = param;
+        }
+
+        container.innerHTML = `
+          <div class="space-y-8">
+            
+            <!-- Header Header -->
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-stone-200">
+              <div>
+                <span class="text-xs font-extrabold text-emerald-800 uppercase tracking-widest">Public Catalog</span>
+                <h1 class="font-serif font-black text-3xl sm:text-4xl text-ink-900 mt-1">Digital Library Stacks</h1>
+                <p class="text-stone-500 text-sm mt-1">Browse, filter, and borrow instantly from available circulation copies.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="app.navigate('donate')" class="px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-emerald-800 hover:bg-emerald-700 shadow-xs flex items-center gap-1.5 transition-colors">
+                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                  <span>Donate Book</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Search & Filter Bar -->
+            <div class="glass-card rounded-3xl p-4 sm:p-5 border border-stone-200 shadow-glass flex flex-col md:flex-row items-center gap-4">
+              
+              <div class="relative flex-1 w-full">
+                <i data-lucide="search" class="w-4 h-4 text-stone-400 absolute left-3.5 top-3.5"></i>
+                <input type="text" id="lib-search" value="${initSearch}" placeholder="Search catalog by title, author, or ISBN..." 
+                  class="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-stone-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white">
+              </div>
+
+              <div class="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                <select id="lib-category" class="px-3.5 py-2.5 rounded-2xl border border-stone-200 text-xs font-bold text-ink-700 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700 min-w-[150px]">
+                  <option value="">All Categories</option>
+                </select>
+
+                <select id="lib-sort" class="px-3.5 py-2.5 rounded-2xl border border-stone-200 text-xs font-bold text-ink-700 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700">
+                  <option value="newest">Newest Additions</option>
+                  <option value="title">Alphabetical (A-Z)</option>
+                  <option value="author">By Author</option>
+                  <option value="available">Available First</option>
+                </select>
+
+                <label class="flex items-center gap-2 px-3 py-2.5 rounded-2xl border border-stone-200 bg-white text-xs font-bold text-ink-700 cursor-pointer whitespace-nowrap hover:bg-stone-50">
+                  <input type="checkbox" id="lib-available-only" class="w-4 h-4 rounded text-emerald-800 focus:ring-emerald-700">
+                  <span>Available Now</span>
+                </label>
+              </div>
+
+            </div>
+
+            <!-- Results Grid -->
+            <div id="lib-results" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div class="h-80 skeleton-shimmer rounded-3xl"></div>
+              <div class="h-80 skeleton-shimmer rounded-3xl"></div>
+              <div class="h-80 skeleton-shimmer rounded-3xl"></div>
+              <div class="h-80 skeleton-shimmer rounded-3xl"></div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="lib-pagination" class="flex justify-center items-center gap-2 pt-6"></div>
+
+          </div>
+        `;
+
+        this.renderIcons();
+
+        // Load categories
+        try {
+          const catRes = await fetch('/api/categories');
+          const catData = await catRes.json();
+          const sel = document.getElementById('lib-category');
+          (catData.categories || []).forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.slug;
+            opt.textContent = c.name;
+            if (c.slug === initCategory) opt.selected = true;
+            sel.appendChild(opt);
+          });
+        } catch (e) {}
+
+        const triggerSearch = (page = 1) => {
+          const q = document.getElementById('lib-search').value;
+          const cat = document.getElementById('lib-category').value;
+          const sort = document.getElementById('lib-sort').value;
+          const avail = document.getElementById('lib-available-only').checked;
+          this.fetchLibraryBooks(q, cat, sort, avail, page);
+        };
+
+        document.getElementById('lib-search').addEventListener('input', () => {
+          clearTimeout(this.searchDebounceTimer);
+          this.searchDebounceTimer = setTimeout(() => triggerSearch(1), 300);
+        });
+        document.getElementById('lib-category').addEventListener('change', () => triggerSearch(1));
+        document.getElementById('lib-sort').addEventListener('change', () => triggerSearch(1));
+        document.getElementById('lib-available-only').addEventListener('change', () => triggerSearch(1));
+        window._triggerLibrarySearch = triggerSearch;
+
+        triggerSearch(1);
+      },
+
+      async fetchLibraryBooks(q, cat, sort, availOnly, page) {
+        const container = document.getElementById('lib-results');
+        const params = new URLSearchParams({ per_page: 12, page });
+        if (q) params.set('search', q);
+        if (cat) params.set('category', cat);
+        if (sort) params.set('sort', sort);
+        if (availOnly) params.set('available_only', '1');
+
+        try {
+          const res = await fetch(`/api/books?${params}`);
+          const data = await res.json();
+          const books = data.books || [];
+
+          if (!books.length) {
+            container.innerHTML = `
+              <div class="col-span-4 text-center py-20 bg-white rounded-3xl border border-stone-200/80 p-8">
+                <i data-lucide="book-x" class="w-12 h-12 text-stone-300 mx-auto mb-3"></i>
+                <h3 class="font-serif font-bold text-xl text-ink-900 mb-1">No Matching Volumes Found</h3>
+                <p class="text-xs text-stone-500 max-w-sm mx-auto">Try broadening your search query or removing category filters.</p>
+              </div>
+            `;
+          } else {
+            container.innerHTML = books.map(b => this.renderModernBookCard(b)).join('');
+          }
+
+          // Render pagination
+          const pag = document.getElementById('lib-pagination');
+          const totalPages = data.pages || 1;
+          const currentPage = data.current_page || 1;
+          if (totalPages > 1) {
+            pag.innerHTML = Array.from({ length: totalPages }, (_, i) => i + 1).map(p => `
+              <button onclick="window._triggerLibrarySearch(${p})" class="w-9 h-9 rounded-xl text-xs font-bold transition-all ${p === currentPage ? 'bg-emerald-800 text-white shadow-xs' : 'bg-white border border-stone-200 text-stone-700 hover:bg-stone-50'}">
+                ${p}
+              </button>
+            `).join('');
+          } else {
+            pag.innerHTML = '';
+          }
+          this.renderIcons();
+        } catch (e) {
+          container.innerHTML = `<div class="col-span-4 text-center py-16 text-stone-500">Could not connect to book index.</div>`;
+        }
+      },
+
+      // =================================================================
+      // 3. BOOK DETAIL VIEW - EDITORIAL 2-COLUMN WITH REVIEWS & INVENTORY
+      // =================================================================
+      async renderBookDetail(container, bookId) {
+        container.innerHTML = `<div class="h-96 skeleton-shimmer rounded-3xl"></div>`;
+        try {
+          const [bookRes, reviewsRes] = await Promise.all([
+            fetch(`/api/books/${bookId}`, { credentials: 'include' }),
+            fetch(`/api/reviews/book/${bookId}`)
+          ]);
+          const bookData = await bookRes.json();
+          const reviewData = reviewsRes.ok ? await reviewsRes.json() : { reviews: [], avg_rating: 0, total_reviews: 0 };
+          const b = bookData.book;
+          if (!b) {
+            container.innerHTML = `<div class="p-16 text-center text-stone-500">Book volume not found.</div>`;
+            return;
+          }
+
+          const copies = b.copies || [];
+          const availCopies = copies.filter(c => c.status === 'available');
+          const avgRating = reviewData.avg_rating || 0;
+          const reviews = reviewData.reviews || [];
+
+          // Reading list check
+          let rlStatus = { on_wishlist: false, on_favorites: false, on_currently_reading: false, list_ids: {} };
+          if (this.user) {
+            try {
+              const rlRes = await fetch(`/api/reading-list/check/${bookId}`, { credentials: 'include' });
+              if (rlRes.ok) rlStatus = await rlRes.json();
+            } catch (e) {}
+          }
+
+          container.innerHTML = `
+            <div class="space-y-12">
+              
+              <!-- Back Link -->
+              <button onclick="app.navigate('library')" class="inline-flex items-center gap-1.5 text-xs font-bold text-stone-500 hover:text-emerald-800 transition-colors">
+                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                <span>Back to Library Stacks</span>
+              </button>
+
+              <!-- Main Hero Presentation -->
+              <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                
+                <!-- Left: 3D Hardcover Mockup -->
+                <div class="lg:col-span-4 flex flex-col items-center">
+                  <div class="w-full max-w-xs aspect-[3/4] rounded-3xl overflow-hidden book-cover-3d shadow-book-hover mb-6 border border-white/40">
+                    <div class="book-spine-line"></div>
+                    <img src="${b.cover_image}" alt="${b.title}" class="w-full h-full object-cover">
+                  </div>
+
+                  <!-- Reading List Pill Controls -->
+                  ${this.user ? `
+                    <div class="w-full max-w-xs grid grid-cols-3 gap-2">
+                      <button onclick="app.toggleReadingList(${b.id}, 'wishlist', ${rlStatus.list_ids.wishlist || 'null'})" class="py-2.5 px-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition-all ${rlStatus.on_wishlist ? 'border-amber-400 bg-amber-50 text-amber-800' : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50'}">
+                        <i data-lucide="bookmark" class="w-4 h-4 ${rlStatus.on_wishlist ? 'text-amber-600 fill-amber-600' : ''}"></i>
+                        <span>Wishlist</span>
+                      </button>
+                      <button onclick="app.toggleReadingList(${b.id}, 'favorites', ${rlStatus.list_ids.favorites || 'null'})" class="py-2.5 px-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition-all ${rlStatus.on_favorites ? 'border-rose-400 bg-rose-50 text-rose-800' : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50'}">
+                        <i data-lucide="heart" class="w-4 h-4 ${rlStatus.on_favorites ? 'text-rose-600 fill-rose-600' : ''}"></i>
+                        <span>Favorite</span>
+                      </button>
+                      <button onclick="app.toggleReadingList(${b.id}, 'currently_reading', ${rlStatus.list_ids.currently_reading || 'null'})" class="py-2.5 px-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition-all ${rlStatus.on_currently_reading ? 'border-blue-400 bg-blue-50 text-blue-800' : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50'}">
+                        <i data-lucide="book-open-check" class="w-4 h-4 ${rlStatus.on_currently_reading ? 'text-blue-600' : ''}"></i>
+                        <span>Reading</span>
+                      </button>
+                    </div>
+                  ` : ''}
+                </div>
+
+                <!-- Right: Editorial Meta & Actions -->
+                <div class="lg:col-span-8 space-y-6">
+                  
+                  <div>
+                    <div class="flex items-center gap-3 mb-2 flex-wrap">
+                      <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        ${b.category_name}
+                      </span>
+                      ${this.availabilityBadge(availCopies.length)}
+                      <div class="flex items-center gap-1 text-amber-500 font-extrabold text-xs">
+                        <span>★ ${avgRating ? avgRating.toFixed(1) : 'New'}</span>
+                        <span class="text-stone-400 font-normal">(${reviewData.total_reviews} reviews)</span>
+                      </div>
+                    </div>
+
+                    <h1 class="font-serif font-black text-3xl sm:text-5xl text-ink-900 tracking-tight leading-tight">${b.title}</h1>
+                    <p class="text-stone-600 text-lg font-medium mt-1">by <span class="text-ink-900 font-bold">${b.author}</span></p>
+                  </div>
+
+                  <!-- Book Overview Description -->
+                  <div class="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200/80 shadow-xs space-y-3">
+                    <h3 class="font-serif font-bold text-base text-ink-900">Synopsis &amp; Archival Record</h3>
+                    <p class="text-stone-600 text-sm leading-relaxed">${b.description || 'No archive description available.'}</p>
+                  </div>
+
+                  <!-- Volume Technical Specs -->
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-parchment-100/80 p-3.5 rounded-2xl border border-parchment-200">
+                      <p class="text-[10px] font-extrabold uppercase tracking-wider text-stone-500">ISBN Code</p>
+                      <p class="text-xs font-mono font-bold text-ink-900 mt-0.5 truncate">${b.isbn || 'N/A'}</p>
+                    </div>
+                    <div class="bg-parchment-100/80 p-3.5 rounded-2xl border border-parchment-200">
+                      <p class="text-[10px] font-extrabold uppercase tracking-wider text-stone-500">Publisher</p>
+                      <p class="text-xs font-bold text-ink-900 mt-0.5 truncate">${b.publisher || 'Public Domain'}</p>
+                    </div>
+                    <div class="bg-parchment-100/80 p-3.5 rounded-2xl border border-parchment-200">
+                      <p class="text-[10px] font-extrabold uppercase tracking-wider text-stone-500">Year / Pages</p>
+                      <p class="text-xs font-bold text-ink-900 mt-0.5">${b.publication_year || '2023'} • ${b.page_count || 300} pp.</p>
+                    </div>
+                    <div class="bg-parchment-100/80 p-3.5 rounded-2xl border border-parchment-200">
+                      <p class="text-[10px] font-extrabold uppercase tracking-wider text-stone-500">Total Copies</p>
+                      <p class="text-xs font-bold text-ink-900 mt-0.5">${b.total_copies_count} on shelf</p>
+                    </div>
+                  </div>
+
+                  <!-- Main Borrow Call to Action -->
+                  <div class="pt-2">
+                    ${this.user ? `
+                      ${availCopies.length > 0 ? `
+                        <button onclick="app.openBorrowModal(${b.id}, ${availCopies[0].id}, '${b.title.replace(/'/g, "\\'")}', '${b.author.replace(/'/g, "\\'")}', '${b.cover_image}')" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-800 to-emerald-950 hover:from-emerald-700 hover:to-emerald-900 text-white font-extrabold text-sm shadow-xl shadow-emerald-950/20 transition-all flex items-center gap-2">
+                          <i data-lucide="bookmark" class="w-4 h-4 text-emerald-300"></i>
+                          <span>Request to Borrow This Volume (Free)</span>
+                        </button>
+                      ` : `
+                        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-2">
+                          <i data-lucide="clock" class="w-4 h-4 text-amber-700"></i>
+                          <span>All physical copies are currently borrowed by fellow patrons. Please check back soon.</span>
+                        </div>
+                      `}
+                    ` : `
+                      <button onclick="app.openModal('login-modal')" class="px-8 py-4 rounded-2xl bg-ink-900 text-white font-extrabold text-sm shadow-lg hover:bg-emerald-900 transition-colors flex items-center gap-2">
+                        <i data-lucide="log-in" class="w-4 h-4"></i>
+                        <span>Sign in with Library Card to Borrow</span>
+                      </button>
+                    `}
+                  </div>
+
+                </div>
+
+              </div>
+
+              <!-- PHYSICAL COPIES INVENTORY -->
+              <div class="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/80 shadow-xs space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+                  <div>
+                    <h3 class="font-serif font-bold text-lg text-ink-900">Physical Shelf Inventory</h3>
+                    <p class="text-xs text-stone-500">Track exact catalog numbers and physical condition of all copies</p>
+                  </div>
+                  <span class="text-xs font-mono text-stone-400">${copies.length} copies catalogued</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="w-full text-xs">
+                    <thead>
+                      <tr class="text-left font-bold uppercase tracking-wider text-stone-400 border-b border-stone-100 pb-2">
+                        <th class="py-2.5">Catalog Copy #</th>
+                        <th class="py-2.5">Physical Condition</th>
+                        <th class="py-2.5">Circulation Status</th>
+                        <th class="py-2.5 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-100">
+                      ${copies.map(c => `
+                        <tr>
+                          <td class="py-3 font-mono font-bold text-ink-900">${c.copy_number}</td>
+                          <td class="py-3 font-medium text-stone-600">${c.condition}</td>
+                          <td class="py-3">${this.statusBadge(c.status)}</td>
+                          <td class="py-3 text-right">
+                            ${c.status === 'available' && this.user ? `
+                              <button onclick="app.openBorrowModal(${b.id}, ${c.id}, '${b.title.replace(/'/g, "\\'")}', '${b.author.replace(/'/g, "\\'")}', '${b.cover_image}')" class="px-3 py-1 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold transition-colors">
+                                Borrow Copy
+                              </button>
+                            ` : `<span class="text-stone-400">—</span>`}
+                          </td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- READER REVIEWS SECTION -->
+              <div class="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/80 shadow-xs space-y-6">
+                <div class="flex items-center justify-between pb-4 border-b border-stone-100">
+                  <div>
+                    <h3 class="font-serif font-bold text-xl text-ink-900">Patron Reviews</h3>
+                    <p class="text-xs text-stone-500">Community impressions and literary ratings</p>
+                  </div>
+                  ${this.user ? `
+                    <button onclick="app.openReviewModal(${b.id}, '${b.title.replace(/'/g, "\\'")}')" class="px-4 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors">
+                      <i data-lucide="star" class="w-3.5 h-3.5 text-amber-300"></i>
+                      <span>Write Review</span>
+                    </button>
+                  ` : ''}
+                </div>
+
+                <div class="space-y-4">
+                  ${reviews.length ? reviews.map(r => `
+                    <div class="p-5 rounded-2xl bg-parchment-50 border border-parchment-200/60 space-y-2">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                          <img src="${r.user_avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${r.user_name}`}" class="w-8 h-8 rounded-full object-cover">
+                          <div>
+                            <p class="font-bold text-xs text-ink-900">${r.user_name}</p>
+                            <p class="text-[10px] text-stone-400 font-mono">${this.formatDate(r.created_at)}</p>
+                          </div>
+                        </div>
+                        <div class="flex text-amber-400 text-xs">
+                          ${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}
+                        </div>
+                      </div>
+                      ${r.review_text ? `<p class="text-xs text-stone-600 leading-relaxed font-normal">${r.review_text}</p>` : ''}
+                    </div>
+                  `).join('') : '<p class="text-center py-8 text-stone-400 text-xs">No reviews submitted yet. Be the first reader to share your impression!</p>'}
+                </div>
+              </div>
+
+            </div>
+          `;
+          this.renderIcons();
+        } catch (e) {
+          container.innerHTML = `<div class="p-16 text-center text-stone-500">Failed to render book: ${e.message}</div>`;
+        }
+      },
+
+      // READING LIST TOGGLE
+      async toggleReadingList(bookId, listType, existingId) {
+        if (!this.user) {
+          this.openModal('login-modal');
+          return;
+        }
+        try {
+          if (existingId) {
+            await fetch(`/api/reading-list/${existingId}`, { method: 'DELETE', credentials: 'include' });
+            this.toast(`Removed from your ${listType.replace('_', ' ')} list`, 'info');
+          } else {
+            await fetch('/api/reading-list', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ book_id: bookId, list_type: listType })
+            });
+            confetti({ particleCount: 40, spread: 50, origin: { y: 0.8 } });
+            this.toast(`Added to ${listType.replace('_', ' ')}! ⭐`, 'success');
+          }
+          this.renderBookDetail(document.getElementById('app-content'), bookId);
+        } catch (e) {
+          this.toast('Action failed', 'error');
+        }
+      },
+
+      // BORROW MODAL
+      openBorrowModal(bookId, copyId, title, author, cover) {
+        if (!this.user) {
+          this.openModal('login-modal');
+          return;
+        }
+        this.activeBorrowBookId = bookId;
+        this.activeBorrowCopyId = copyId;
+        this.borrowDays = 14;
+
+        document.getElementById('borrow-book-info').innerHTML = `
+          <div class="flex gap-3 items-center">
+            <img src="${cover}" class="w-12 h-16 object-cover rounded-xl shadow-xs">
+            <div class="min-w-0">
+              <h4 class="font-serif font-bold text-sm text-ink-900 truncate">${title}</h4>
+              <p class="text-xs text-stone-500">${author}</p>
+              <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 mt-1">Copy #${copyId} ready</span>
+            </div>
+          </div>
+        `;
+        this.openModal('borrow-modal');
+      },
+
+      selectBorrowDays(days) {
+        this.borrowDays = days;
+        document.querySelectorAll('.borrow-day-btn').forEach(btn => {
+          if (parseInt(btn.dataset.days) === days) {
+            btn.className = 'borrow-day-btn py-3 text-xs font-extrabold rounded-2xl border-2 border-emerald-800 bg-emerald-800 text-white';
+          } else {
+            btn.className = 'borrow-day-btn py-3 text-xs font-extrabold rounded-2xl border border-stone-200 text-stone-700 hover:border-emerald-700 transition-colors';
+          }
+        });
+      },
+
+      async submitBorrowRequest() {
+        if (!this.activeBorrowCopyId) return;
+        try {
+          const res = await fetch('/api/borrowings/request', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              book_copy_id: this.activeBorrowCopyId,
+              requested_duration_days: this.borrowDays
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+            this.toast('Borrow request queued for librarian dispatch! 📬', 'success');
+            this.closeModal('borrow-modal');
+            this.navigate('profile');
+          } else {
+            this.toast(data.message || 'Borrow request failed', 'error');
+          }
+        } catch (e) {
+          this.toast('Network error', 'error');
+        }
+      },
+
+      // REVIEW MODAL
+      openReviewModal(bookId, bookTitle) {
+        this.activeReviewBookId = bookId;
+        this.reviewRating = 5;
+        document.getElementById('review-book-info').textContent = `Volume: ${bookTitle}`;
+        this.setReviewRating(5);
+        this.openModal('review-modal');
+      },
+
+      setReviewRating(r) {
+        this.reviewRating = r;
+        document.querySelectorAll('.star-btn').forEach((btn, idx) => {
+          if (idx < r) {
+            btn.classList.add('text-amber-400');
+            btn.classList.remove('text-stone-300');
+          } else {
+            btn.classList.remove('text-amber-400');
+            btn.classList.add('text-stone-300');
+          }
+        });
+      },
+
+      async submitReview(e) {
+        e.preventDefault();
+        try {
+          const res = await fetch(`/api/reviews/book/${this.activeReviewBookId}`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              rating: this.reviewRating,
+              review_text: document.getElementById('review-text').value
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            confetti({ particleCount: 50, spread: 50, origin: { y: 0.7 } });
+            this.toast('Your review is live on the public record! ⭐', 'success');
+            this.closeModal('review-modal');
+            this.renderBookDetail(document.getElementById('app-content'), this.activeReviewBookId);
+          } else {
+            this.toast(data.message || 'Review failed', 'error');
+          }
+        } catch (e) {
+          this.toast('Network error', 'error');
+        }
+      },
+
+      // =================================================================
+      // 4. DONATE BOOKS VIEW
+      // =================================================================
+      async renderDonate(container) {
+        container.innerHTML = `
+          <div class="max-w-4xl mx-auto space-y-10">
+            
+            <div class="text-center space-y-3">
+              <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-200">
+                <i data-lucide="gift" class="w-3.5 h-3.5 text-amber-700"></i>
+                Community Book Drive
+              </span>
+              <h1 class="font-serif font-black text-3xl sm:text-5xl text-ink-900">Donate Pre-Loved Books</h1>
+              <p class="text-stone-600 text-sm max-w-xl mx-auto leading-relaxed">
+                Give your books a second home. Once reviewed by our curation team, your donated title will be cataloged and circulated to hundreds of readers.
+              </p>
+            </div>
+
+            <div class="glass-card rounded-3xl p-8 sm:p-12 border border-stone-200/80 shadow-glass">
+              <form onsubmit="app.submitDonation(event)" class="space-y-6">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-xs font-bold text-ink-800 uppercase tracking-wider mb-2">Book Title *</label>
+                    <input type="text" id="don-title" required placeholder="e.g. Sapiens: A Brief History" class="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-ink-800 uppercase tracking-wider mb-2">Author *</label>
+                    <input type="text" id="don-author" required placeholder="e.g. Yuval Noah Harari" class="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-xs font-bold text-ink-800 uppercase tracking-wider mb-2">Category *</label>
+                    <select id="don-category" class="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white">
+                      <option>Fiction &amp; Literature</option>
+                      <option>Science &amp; Technology</option>
+                      <option>History &amp; Biography</option>
+                      <option>Philosophy &amp; Thought</option>
+                      <option>Arts &amp; Design</option>
+                      <option>Children &amp; Young Adult</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-ink-800 uppercase tracking-wider mb-2">Physical Condition *</label>
+                    <select id="don-condition" class="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white">
+                      <option>New</option>
+                      <option selected>Like New</option>
+                      <option>Good</option>
+                      <option>Fair</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-ink-800 uppercase tracking-wider mb-2">Cover Image URL (Optional)</label>
+                  <input type="url" id="don-cover" placeholder="https://images.unsplash.com/..." class="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-ink-800 uppercase tracking-wider mb-2">Edition / Note to Curator</label>
+                  <textarea id="don-desc" rows="3" placeholder="Hardcover / Paperback, edition details, notes on condition..." class="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"></textarea>
+                </div>
+
+                <button type="submit" class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-800 to-emerald-950 text-white font-extrabold text-sm shadow-xl hover:from-emerald-700 hover:to-emerald-900 transition-all flex items-center justify-center gap-2">
+                  <i data-lucide="heart" class="w-4 h-4 text-rose-300"></i>
+                  <span>Submit Volume for Curation</span>
+                </button>
+              </form>
+            </div>
+
+          </div>
+        `;
+        this.renderIcons();
+      },
+
+      async submitDonation(e) {
+        e.preventDefault();
+        if (!this.user) {
+          this.openModal('login-modal');
+          return;
+        }
+        try {
+          const res = await fetch('/api/donations', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: document.getElementById('don-title').value,
+              author: document.getElementById('don-author').value,
+              category_name: document.getElementById('don-category').value,
+              condition: document.getElementById('don-condition').value,
+              cover_image: document.getElementById('don-cover').value,
+              description: document.getElementById('don-desc').value
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            this.toast('Thank you! Donation submitted for librarian review. 🎁', 'success');
+            this.navigate('profile');
+          } else {
+            this.toast(data.message || 'Donation failed', 'error');
+          }
+        } catch (e) {
+          this.toast('Network error', 'error');
+        }
+      },
+
+      // =================================================================
+      // 5. BOOK EXCHANGE HUB VIEW
+      // =================================================================
+      async renderExchanges(container) {
+        container.innerHTML = `<div class="h-96 skeleton-shimmer rounded-3xl"></div>`;
+        try {
+          const res = await fetch('/api/exchanges/listings');
+          const data = await res.json();
+          const listings = data.listings || [];
+
+          container.innerHTML = `
+            <div class="space-y-10">
+              
+              <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-stone-200">
+                <div>
+                  <span class="text-xs font-extrabold text-indigo-700 uppercase tracking-widest">P2P Community Market</span>
+                  <h1 class="font-serif font-black text-3xl sm:text-4xl text-ink-900 mt-1">Book Exchange Hub</h1>
+                  <p class="text-stone-500 text-sm mt-1">Direct member-to-member book trading without library card restrictions.</p>
+                </div>
+                ${this.user ? `
+                  <button onclick="app.toggleListingForm()" class="px-5 py-2.5 rounded-2xl bg-indigo-700 hover:bg-indigo-600 text-white font-extrabold text-xs shadow-md transition-colors flex items-center gap-1.5">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>List a Book to Swap</span>
+                  </button>
+                ` : `
+                  <button onclick="app.openModal('login-modal')" class="px-5 py-2.5 rounded-2xl bg-ink-900 text-white font-extrabold text-xs">
+                    Sign in to Trade
+                  </button>
+                `}
+              </div>
+
+              <!-- Create Exchange Listing Collapsible Form -->
+              <div id="exchange-create-form" class="hidden glass-card rounded-3xl p-6 sm:p-8 border border-indigo-200 shadow-glass">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="font-serif font-bold text-lg text-ink-900">List Your Book For Swap</h3>
+                  <button onclick="app.toggleListingForm()" class="text-stone-400 hover:text-stone-700">✕</button>
+                </div>
+                <form onsubmit="app.submitNewListing(event)" class="space-y-4">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <input type="text" id="ex-new-title" required placeholder="Book Title *" class="px-4 py-2.5 rounded-2xl border border-stone-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                    <input type="text" id="ex-new-author" required placeholder="Author *" class="px-4 py-2.5 rounded-2xl border border-stone-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <select id="ex-new-category" class="px-4 py-2.5 rounded-2xl border border-stone-200 text-xs font-semibold bg-white">
+                      <option>Fiction &amp; Literature</option>
+                      <option>Science &amp; Technology</option>
+                      <option>History &amp; Biography</option>
+                      <option>Philosophy &amp; Thought</option>
+                    </select>
+                    <select id="ex-new-condition" class="px-4 py-2.5 rounded-2xl border border-stone-200 text-xs font-semibold bg-white">
+                      <option>Like New</option><option selected>Good</option><option>Fair</option>
+                    </select>
+                    <input type="text" id="ex-new-looking" placeholder="What you want in return..." class="px-4 py-2.5 rounded-2xl border border-stone-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                  </div>
+                  <button type="submit" class="px-6 py-3 rounded-2xl bg-indigo-700 hover:bg-indigo-600 text-white font-extrabold text-xs shadow-md transition-all">
+                    Publish Listing to Hub
+                  </button>
+                </form>
+              </div>
+
+              <!-- Market Listings Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                ${listings.map(l => `
+                  <div class="glass-card rounded-3xl p-5 border border-stone-200/80 hover:border-indigo-400/50 hover:shadow-elevated transition-all flex flex-col justify-between">
+                    <div class="space-y-4">
+                      
+                      <div class="flex gap-4 items-start">
+                        <img src="${l.cover_image || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300'}" class="w-16 h-22 object-cover rounded-xl shadow-xs flex-shrink-0">
+                        <div class="flex-1 min-w-0">
+                          <span class="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider">${l.category}</span>
+                          <h4 class="font-serif font-black text-base text-ink-900 leading-snug truncate">${l.title}</h4>
+                          <p class="text-xs text-stone-500">${l.author}</p>
+                          <div class="flex items-center gap-2 mt-2">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-600">${l.condition}</span>
+                            ${this.statusBadge(l.status)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="bg-indigo-50/60 p-3 rounded-2xl border border-indigo-100/80 text-xs">
+                        <p class="font-bold text-indigo-950 flex items-center gap-1.5 mb-0.5">
+                          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-600"></i>
+                          <span>Looking for in swap:</span>
+                        </p>
+                        <p class="text-stone-600 italic font-medium leading-relaxed">${l.looking_for || 'Open to all genre trades'}</p>
+                      </div>
+
+                    </div>
+
+                    <div class="pt-4 mt-4 border-t border-stone-100 flex items-center justify-between">
+                      <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-800 font-extrabold text-[10px] flex items-center justify-center">
+                          ${l.owner_name.charAt(0)}
+                        </div>
+                        <span class="text-xs font-semibold text-stone-600">${l.owner_name}</span>
+                      </div>
+
+                      ${l.status === 'available' && (!this.user || this.user.id !== l.user_id) ? `
+                        <button onclick="app.openExchangeModal(${l.id}, '${l.title.replace(/'/g, "\\'")}', '${l.owner_name.replace(/'/g, "\\'")}')" class="px-4 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-600 text-white font-extrabold text-xs shadow-xs transition-colors flex items-center gap-1.5">
+                          <i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i>
+                          <span>Propose Swap</span>
+                        </button>
+                      ` : ''}
+                    </div>
+
+                  </div>
+                `).join('')}
+              </div>
+
+            </div>
+          `;
+          this.renderIcons();
+        } catch (e) {
+          container.innerHTML = `<div class="p-16 text-center text-stone-500">Failed to load exchange listings: ${e.message}</div>`;
+        }
+      },
+
+      toggleListingForm() {
+        document.getElementById('exchange-create-form').classList.toggle('hidden');
+      },
+
+      async submitNewListing(e) {
+        e.preventDefault();
+        try {
+          const res = await fetch('/api/exchanges/listings', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: document.getElementById('ex-new-title').value,
+              author: document.getElementById('ex-new-author').value,
+              category: document.getElementById('ex-new-category').value,
+              condition: document.getElementById('ex-new-condition').value,
+              looking_for: document.getElementById('ex-new-looking').value
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+            this.toast('Volume listed on Exchange Hub! 🔄', 'success');
+            this.navigate('exchanges');
+          } else {
+            this.toast(data.message || 'Listing failed', 'error');
+          }
+        } catch (e) {
+          this.toast('Network error', 'error');
+        }
+      },
+
+      openExchangeModal(listingId, title, ownerName) {
+        if (!this.user) {
+          this.openModal('login-modal');
+          return;
+        }
+        this.activeExchangeListingId = listingId;
+        document.getElementById('exchange-listing-info').innerHTML = `
+          <p class="text-xs text-indigo-950 font-bold">Proposing trade for: <span class="font-serif text-sm">${title}</span></p>
+          <p class="text-[11px] text-stone-500">Listed by patron: ${ownerName}</p>
+        `;
+        this.openModal('exchange-modal');
+      },
+
+      async submitExchangeProposal(e) {
+        e.preventDefault();
+        try {
+          const res = await fetch('/api/exchanges/request', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              listing_id: this.activeExchangeListingId,
+              offered_title: document.getElementById('ex-offer-title').value,
+              offered_author: document.getElementById('ex-offer-author').value,
+              offered_condition: document.getElementById('ex-offer-condition').value,
+              message: document.getElementById('ex-message').value
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+            this.toast('Exchange proposal delivered to book owner! 📬', 'success');
+            this.closeModal('exchange-modal');
+            this.navigate('profile');
+          } else {
+            this.toast(data.message || 'Proposal failed', 'error');
+          }
+        } catch (e) {
+          this.toast('Network error', 'error');
+        }
+      },
+
+      // =================================================================
+      // 6. PATRON PROFILE & READING STASH
+      // =================================================================
+      async renderProfile(container) {
+        if (!this.user) {
+          container.innerHTML = `<div class="p-16 text-center text-stone-500">Please sign in to view your library record.</div>`;
+          return;
+        }
+        container.innerHTML = `<div class="h-96 skeleton-shimmer rounded-3xl"></div>`;
+
+        try {
+          const [txRes, reqRes, donRes, rlRes] = await Promise.all([
+            fetch('/api/borrowings/my', { credentials: 'include' }),
+            fetch('/api/borrowings/requests/my', { credentials: 'include' }),
+            fetch('/api/donations/my', { credentials: 'include' }),
+            fetch('/api/reading-list', { credentials: 'include' })
+          ]);
+          const [txData, reqData, donData, rlData] = await Promise.all([txRes.json(), reqRes.json(), donRes.json(), rlRes.json()]);
+
+          const transactions = txData.transactions || [];
+          const requests = reqData.requests || [];
+          const donations = donData.donations || [];
+          const wishlist = rlData.wishlist || [];
+          const favorites = rlData.favorites || [];
+          const currentlyReading = rlData.currently_reading || [];
+
+          const activeLoans = transactions.filter(t => t.status === 'active' || t.status === 'return_pending' || t.status === 'overdue');
+
+          container.innerHTML = `
+            <div class="space-y-10">
+              
+              <!-- Patron ID Card -->
+              <div class="glass-card rounded-[2.5rem] p-8 sm:p-10 border border-stone-200/80 shadow-glass relative overflow-hidden">
+                <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 relative z-10">
+                  <img src="${this.user.avatar}" class="w-24 h-24 rounded-3xl object-cover ring-4 ring-emerald-800/10 shadow-md">
+                  <div class="flex-1 text-center sm:text-left space-y-1">
+                    <div class="flex items-center justify-center sm:justify-start gap-2">
+                      <h2 class="font-serif font-black text-2xl sm:text-3xl text-ink-900">${this.user.name}</h2>
+                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800">${this.user.role}</span>
+                    </div>
+                    <p class="text-xs font-mono text-stone-500">${this.user.email} • Member since ${this.formatDate(this.user.created_at)}</p>
+                    <p class="text-xs text-stone-600 max-w-md pt-2">${this.user.bio || 'Avid reader and community library patron.'}</p>
+                  </div>
+                  <div class="grid grid-cols-3 gap-4 text-center bg-stone-50 p-4 rounded-2xl border border-stone-200/60">
+                    <div>
+                      <p class="font-serif font-black text-xl text-ink-900">${transactions.length}</p>
+                      <p class="text-[9px] font-bold uppercase tracking-wider text-stone-400">Total Loans</p>
+                    </div>
+                    <div>
+                      <p class="font-serif font-black text-xl text-emerald-800">${activeLoans.length}</p>
+                      <p class="text-[9px] font-bold uppercase tracking-wider text-stone-400">Active</p>
+                    </div>
+                    <div>
+                      <p class="font-serif font-black text-xl text-amber-700">${donations.length}</p>
+                      <p class="text-[9px] font-bold uppercase tracking-wider text-stone-400">Donations</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Active Borrowings Section -->
+              <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-serif font-bold text-xl text-ink-900">Current Circulating Loans</h3>
+                  <span class="text-xs font-mono text-stone-400">${activeLoans.length} active</span>
+                </div>
+
+                ${activeLoans.length ? `
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${activeLoans.map(t => {
+                      const d = this.daysUntil(t.due_date);
+                      const isOver = t.status === 'overdue' || (d !== null && d < 0);
+                      return `
+                        <div class="glass-card rounded-3xl p-5 border ${isOver ? 'border-rose-300 bg-rose-50/40' : 'border-stone-200/80'} shadow-xs flex gap-4">
+                          <img src="${t.cover_image}" class="w-16 h-22 object-cover rounded-xl shadow-xs flex-shrink-0">
+                          <div class="flex-1 min-w-0 flex flex-col justify-between">
+                            <div>
+                              <div class="flex items-center justify-between">
+                                <span class="font-mono text-[10px] text-stone-400">Copy ${t.copy_number}</span>
+                                ${this.statusBadge(isOver ? 'overdue' : t.status)}
+                              </div>
+                              <h4 class="font-serif font-black text-base text-ink-900 truncate mt-0.5">${t.book_title}</h4>
+                              <p class="text-xs text-stone-500">${t.book_author}</p>
+                            </div>
+                            <div class="flex items-center justify-between pt-2 border-t border-stone-100">
+                              <span class="text-[11px] ${isOver ? 'text-rose-700 font-extrabold' : 'text-stone-500'}">
+                                ${isOver ? `Overdue by ${Math.abs(d)} days` : `Due in ${d} days`}
+                              </span>
+                              ${!t.has_return_request && t.status !== 'returned' ? `
+                                <button onclick="app.requestBookReturn(${t.id})" class="px-3 py-1.5 rounded-xl bg-ink-900 hover:bg-emerald-800 text-white font-extrabold text-[11px] transition-colors">
+                                  Return Volume
+                                </button>
+                              ` : `<span class="text-[11px] font-bold text-amber-700">Return Pending Confirmation</span>`}
+                            </div>
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                ` : `
+                  <div class="p-8 text-center bg-white rounded-3xl border border-stone-200/80">
+                    <p class="text-xs text-stone-400">No active books currently out. Visit the stacks to discover something new!</p>
+                  </div>
+                `}
+              </div>
+
+              <!-- Patron Reading Stashes (Wishlist / Reading) -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <!-- Wishlist -->
+                <div class="bg-white rounded-3xl p-6 border border-stone-200/80 space-y-4">
+                  <div class="flex items-center justify-between">
+                    <h4 class="font-serif font-bold text-lg text-ink-900">Personal Wishlist</h4>
+                    <span class="text-xs font-mono text-stone-400">${wishlist.length}</span>
+                  </div>
+                  <div class="space-y-3">
+                    ${wishlist.map(w => `
+                      <div onclick="app.navigate('book-detail', ${w.book_id})" class="flex items-center justify-between p-3 rounded-2xl hover:bg-stone-50 cursor-pointer transition-colors border border-stone-100">
+                        <div class="flex items-center gap-3 min-w-0">
+                          <img src="${w.cover_image}" class="w-8 h-11 object-cover rounded-md flex-shrink-0">
+                          <div class="min-w-0">
+                            <p class="font-bold text-xs text-ink-900 truncate">${w.book_title}</p>
+                            <p class="text-[11px] text-stone-500">${w.book_author}</p>
+                          </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300"></i>
+                      </div>
+                    `).join('') || '<p class="text-xs text-stone-400 py-4 text-center">Your wishlist is empty.</p>'}
+                  </div>
+                </div>
+
+                <!-- Reading History -->
+                <div class="bg-white rounded-3xl p-6 border border-stone-200/80 space-y-4">
+                  <div class="flex items-center justify-between">
+                    <h4 class="font-serif font-bold text-lg text-ink-900">Borrowing History</h4>
+                    <span class="text-xs font-mono text-stone-400">${transactions.length} total</span>
+                  </div>
+                  <div class="space-y-3 max-h-72 overflow-y-auto">
+                    ${transactions.map(t => `
+                      <div class="flex items-center justify-between p-3 rounded-2xl bg-stone-50 text-xs">
+                        <div class="min-w-0">
+                          <p class="font-bold text-ink-900 truncate">${t.book_title}</p>
+                          <p class="text-[10px] text-stone-400">Borrowed: ${this.formatDate(t.borrow_date)}</p>
+                        </div>
+                        ${this.statusBadge(t.status)}
+                      </div>
+                    `).join('') || '<p class="text-xs text-stone-400 py-4 text-center">No loan history yet.</p>'}
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          `;
+          this.renderIcons();
+        } catch (e) {
+          container.innerHTML = `<div class="p-16 text-center text-stone-500">Failed to render profile: ${e.message}</div>`;
+        }
+      },
+
+      async requestBookReturn(txId) {
+        try {
+          const res = await fetch('/api/returns/request', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ transaction_id: txId, condition_notes: 'Returned in good condition.' })
+          });
+          const data = await res.json();
+          if (data.success) {
+            this.toast('Return request submitted! Librarian will verify check-in.', 'success');
+            this.renderProfile(document.getElementById('app-content'));
+          } else {
+            this.toast(data.message || 'Return failed', 'error');
+          }
+        } catch (e) {
+          this.toast('Network error', 'error');
+        }
+      },
+
+      // =================================================================
+      // 7. LIBRARIAN ADMIN CONSOLE
+      // =================================================================
+      async renderAdmin(container) {
+        if (!this.user || !this.user.is_admin) {
+          container.innerHTML = `<div class="p-16 text-center text-rose-600 font-bold">Unauthorized: Librarian privileges required.</div>`;
+          return;
+        }
+        container.innerHTML = `<div class="h-96 skeleton-shimmer rounded-3xl"></div>`;
+
+        try {
+          const [overviewRes, donRes, borRes, retRes] = await Promise.all([
+            fetch('/api/admin/overview', { credentials: 'include' }),
+            fetch('/api/donations?status=pending', { credentials: 'include' }),
+            fetch('/api/borrowings/requests?status=pending', { credentials: 'include' }),
+            fetch('/api/returns?status=pending', { credentials: 'include' })
+          ]);
+          const [overviewData, donData, borData, retData] = await Promise.all([overviewRes.json(), donRes.json(), borRes.json(), retRes.json()]);
+
+          const stats = overviewData.stats || {};
+          const pendingDons = donData.donations || [];
+          const pendingBors = borData.requests || [];
+          const pendingRets = retData.return_requests || [];
+
+          container.innerHTML = `
+            <div class="space-y-10">
+              
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
+                <div>
+                  <span class="text-xs font-extrabold text-amber-800 uppercase tracking-widest">Library Administration</span>
+                  <h1 class="font-serif font-black text-3xl sm:text-4xl text-ink-900 mt-1">Librarian Operations Console</h1>
+                  <p class="text-stone-500 text-sm mt-1">Review circulation requests, confirm returned volumes, and inspect catalog health.</p>
+                </div>
+                <button onclick="app.resetDatabasePrompt()" class="px-5 py-2.5 rounded-2xl bg-rose-800 hover:bg-rose-700 text-white font-extrabold text-xs shadow-xs transition-colors flex items-center gap-1.5">
+                  <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                  <span>Reset &amp; Reseed DB</span>
+                </button>
+              </div>
+
+              <!-- Top Metrics Cards -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-5">
+                <div class="glass-card p-6 rounded-3xl border border-stone-200">
+                  <p class="text-xs font-bold text-stone-500 uppercase tracking-wider">Catalog Volumes</p>
+                  <p class="font-serif font-black text-3xl text-ink-900 mt-2">${stats.total_books || 0}</p>
+                </div>
+                <div class="glass-card p-6 rounded-3xl border border-stone-200">
+                  <p class="text-xs font-bold text-stone-500 uppercase tracking-wider">Active Circulation</p>
+                  <p class="font-serif font-black text-3xl text-emerald-800 mt-2">${stats.active_borrowings || 0}</p>
+                </div>
+                <div class="glass-card p-6 rounded-3xl border border-stone-200">
+                  <p class="text-xs font-bold text-stone-500 uppercase tracking-wider">Overdue Alerts</p>
+                  <p class="font-serif font-black text-3xl text-rose-700 mt-2">${stats.overdue_borrowings || 0}</p>
+                </div>
+                <div class="glass-card p-6 rounded-3xl border border-stone-200">
+                  <p class="text-xs font-bold text-stone-500 uppercase tracking-wider">Registered Patrons</p>
+                  <p class="font-serif font-black text-3xl text-amber-800 mt-2">${stats.total_users || 0}</p>
+                </div>
+              </div>
+
+              <!-- Operations Queue -->
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Pending Borrows -->
+                <div class="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-xs space-y-4">
+                  <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+                    <h4 class="font-serif font-bold text-base text-ink-900">Borrow Requests (${pendingBors.length})</h4>
+                  </div>
+                  <div class="space-y-3 max-h-96 overflow-y-auto">
+                    ${pendingBors.map(r => `
+                      <div class="p-4 rounded-2xl bg-stone-50 border border-stone-100 space-y-3">
+                        <div>
+                          <p class="font-bold text-xs text-ink-900 truncate">${r.book_title}</p>
+                          <p class="text-[11px] text-stone-500">Patron: ${r.user_name} • Copy: ${r.copy_number}</p>
+                        </div>
+                        <div class="flex gap-2">
+                          <button onclick="app.adminAction('/api/borrowings/requests/${r.id}/approve')" class="flex-1 py-1.5 rounded-xl bg-emerald-800 text-white font-bold text-[11px] hover:bg-emerald-700">Approve</button>
+                          <button onclick="app.adminAction('/api/borrowings/requests/${r.id}/reject')" class="flex-1 py-1.5 rounded-xl bg-stone-200 text-stone-700 font-bold text-[11px] hover:bg-stone-300">Reject</button>
+                        </div>
+                      </div>
+                    `).join('') || '<p class="text-xs text-stone-400 py-6 text-center">No pending borrow requests.</p>'}
+                  </div>
+                </div>
+
+                <!-- Pending Returns -->
+                <div class="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-xs space-y-4">
+                  <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+                    <h4 class="font-serif font-bold text-base text-ink-900">Return Check-Ins (${pendingRets.length})</h4>
+                  </div>
+                  <div class="space-y-3 max-h-96 overflow-y-auto">
+                    ${pendingRets.map(r => `
+                      <div class="p-4 rounded-2xl bg-stone-50 border border-stone-100 space-y-3">
+                        <div>
+                          <p class="font-bold text-xs text-ink-900 truncate">${r.book_title}</p>
+                          <p class="text-[11px] text-stone-500">Patron: ${r.user_name} • Copy: ${r.copy_number}</p>
+                        </div>
+                        <div class="flex gap-2">
+                          <button onclick="app.adminAction('/api/returns/${r.id}/confirm')" class="flex-1 py-1.5 rounded-xl bg-emerald-800 text-white font-bold text-[11px] hover:bg-emerald-700">Confirm Return</button>
+                        </div>
+                      </div>
+                    `).join('') || '<p class="text-xs text-stone-400 py-6 text-center">No pending returns.</p>'}
+                  </div>
+                </div>
+
+                <!-- Pending Donations -->
+                <div class="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-xs space-y-4">
+                  <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+                    <h4 class="font-serif font-bold text-base text-ink-900">Donation Reviews (${pendingDons.length})</h4>
+                  </div>
+                  <div class="space-y-3 max-h-96 overflow-y-auto">
+                    ${pendingDons.map(d => `
+                      <div class="p-4 rounded-2xl bg-stone-50 border border-stone-100 space-y-3">
+                        <div>
+                          <p class="font-bold text-xs text-ink-900 truncate">${d.title}</p>
+                          <p class="text-[11px] text-stone-500">By: ${d.author} • Donor: ${d.donor_name}</p>
+                        </div>
+                        <div class="flex gap-2">
+                          <button onclick="app.adminAction('/api/donations/${d.id}/approve')" class="flex-1 py-1.5 rounded-xl bg-emerald-800 text-white font-bold text-[11px] hover:bg-emerald-700">Catalog</button>
+                          <button onclick="app.adminAction('/api/donations/${d.id}/reject')" class="flex-1 py-1.5 rounded-xl bg-stone-200 text-stone-700 font-bold text-[11px] hover:bg-stone-300">Decline</button>
+                        </div>
+                      </div>
+                    `).join('') || '<p class="text-xs text-stone-400 py-6 text-center">No pending donations.</p>'}
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          `;
+          this.renderIcons();
+        } catch (e) {
+          container.innerHTML = `<div class="p-16 text-center text-stone-500">Failed to render admin console: ${e.message}</div>`;
+        }
+      },
+
+      async adminAction(endpoint) {
+        try {
+          const res = await fetch(endpoint, { method: 'POST', credentials: 'include' });
+          const data = await res.json();
+          if (data.success) {
+            this.toast('Operation confirmed!', 'success');
+            this.renderAdmin(document.getElementById('app-content'));
+          } else {
+            this.toast(data.message || 'Action failed', 'error');
+          }
+        } catch (e) {
+          this.toast('Network error', 'error');
+        }
+      },
+
+      async resetDatabasePrompt() {
+        if (!confirm('Warning: This will re-seed the SQLite database with initial realistic records. Proceed?')) return;
+        try {
+          const res = await fetch('/api/admin/reset-database');
+          const data = await res.json();
+          if (data.success) {
+            confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+            this.toast('Database reset & re-seeded with relational integrity!', 'success');
+            await this.checkAuth();
+            setTimeout(() => this.navigate('home'), 1000);
+          }
+        } catch (e) {
+          this.toast('Reset failed', 'error');
+        }
+      }
+
+    };
+
+    document.addEventListener('DOMContentLoaded', () => app.init());
+  </script>
+</body>
+</html>

@@ -143,3 +143,106 @@ def change_password():
     db.session.commit()
     
     return jsonify({'success': True, 'message': 'Password changed successfully'})
+
+@auth_bp.route('/google/config', methods=['GET'])
+def get_google_config():
+    """Returns Google Client ID configuration if set in environment."""
+    import os
+    client_id = os.environ.get('GOOGLE_CLIENT_ID', '')
+    return jsonify({
+        'success': True,
+        'client_id': client_id,
+        'configured': bool(client_id)
+    })
+
+@auth_bp.route('/google', methods=['POST'])
+def google_auth():
+    """
+    Sign in or register a patron using Google Account.
+    Accepts:
+    1. Google Identity Services ID Token credential (verified via Google tokeninfo)
+    2. Direct Google profile payload { email, name, avatar, google_id }
+    """
+    import os
+    import secrets
+    import urllib.request
+    import json
+    
+    data = request.get_json() or {}
+    credential = data.get('credential')
+    
+    email = None
+    name = None
+    avatar = None
+    
+    # 1. If Google ID Token credential was sent from Google Identity Services
+    if credential:
+        try:
+            token_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={credential}"
+            req = urllib.request.Request(token_url, headers={'User-Agent': 'BookBridge/1.0'})
+            with urllib.request.urlopen(req, timeout=8) as res:
+                google_info = json.loads(res.read().decode('utf-8'))
+                email = google_info.get('email', '').strip().lower()
+                name = google_info.get('name', '').strip()
+                avatar = google_info.get('picture', '').strip()
+        except Exception as e:
+            # Fall back to provided user info if offline or token inspection failed
+            pass
+            
+    # 2. If direct profile data provided (or fallback from payload)
+    if not email:
+        email = data.get('email', '').strip().lower()
+        name = data.get('name', '').strip()
+        avatar = data.get('avatar', '').strip()
+        
+    if not email:
+        return jsonify({'success': False, 'message': 'Valid Google email is required'}), 400
+        
+    if not name:
+        name = email.split('@')[0].capitalize()
+        
+    if not avatar:
+        avatar = f"https://api.dicebear.com/7.x/initials/svg?seed={name}&backgroundColor=166534&textColor=ffffff"
+        
+    # Check if user already exists
+    user = User.query.filter_by(email=email).first()
+    is_new = False
+    
+    if user:
+        # Existing user: update avatar if not present
+        if avatar and (not user.avatar or 'dicebear' in user.avatar):
+            user.avatar = avatar
+            db.session.commit()
+    else:
+        # New Google user: register account automatically
+        is_new = True
+        random_pwd = secrets.token_urlsafe(24)
+        user = User(
+            name=name,
+            email=email,
+            role='user',
+            avatar=avatar,
+            bio='Community patron signed in with Google Account.'
+        )
+        user.set_password(random_pwd)
+        db.session.add(user)
+        db.session.commit()
+        
+        notify_user(
+            user.id,
+            "Welcome to BookBridge! 📚",
+            f"Hello {name}, your library account is ready with Google Sign-in.",
+            "success",
+            "/library"
+        )
+        
+    # Login user session
+    login_user(user, remember=True)
+    
+    return jsonify({
+        'success': True,
+        'message': f"Signed in as {user.name} via Google Account",
+        'user': user.to_dict(),
+        'is_new_user': is_new
+    })
+

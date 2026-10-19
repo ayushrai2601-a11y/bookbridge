@@ -18,3 +18,10 @@ class Config:
     
     # CORS
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
+    
+    # Google OAuth & Trusted Patrons Security
+    GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+    GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+    TRUSTED_GMAIL_ONLY = os.environ.get('TRUSTED_GMAIL_ONLY', 'true').lower() in ('true', '1')
+    ALLOWED_GMAIL_DOMAINS = [d.strip().lower() for d in os.environ.get('ALLOWED_GMAIL_DOMAINS', 'gmail.com,googlemail.com').split(',') if d.strip()]
+

@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timezone, timedelta
 from app import create_app
-from app.models import db, User, Category, Book, BookCopy, Donation, BorrowingRequest, BorrowingTransaction, ReturnRequest, ExchangeListing, ExchangeRequest, Notification, BookReview, ReadingList
+from app.models import db, User, Category, Book, BookCopy, Donation, BorrowingRequest, BorrowingTransaction, ReturnRequest, ExchangeListing, ExchangeRequest, Notification, BookReview, ReadingList, TrustedGmail
 
 app = create_app()
 
@@ -439,8 +439,18 @@ def seed_database():
         ]
         db.session.add_all(rl_data)
         
+        # 10. Trusted Google Patrons Whitelist
+        print("Creating trusted Google patrons whitelist...")
+        trusted_data = [
+            TrustedGmail(email='admin@bookbridge.org', name='Eleanor Vance', notes='Chief Curator / Head Librarian'),
+            TrustedGmail(email='alex.reader@gmail.com', name='Alex Rivera', notes='Verified Community Patron (Literature Dept)'),
+            TrustedGmail(email='maya.researcher@gmail.com', name='Dr. Maya Lin', notes='Academic Researcher & Author'),
+            TrustedGmail(email='clara.oswald@gmail.com', name='Clara Oswald', notes='Verified Senior Patron')
+        ]
+        db.session.add_all(trusted_data)
+        
         db.session.commit()
-        print("Database successfully seeded with realistic library records!")
+        print("Database successfully seeded with realistic library records and trusted patrons!")
 
 if __name__ == '__main__':
     seed_database()

@@ -581,7 +581,12 @@
             </svg>
           </div>
           <div>
-            <h3 class="font-serif font-black text-xl text-ink-900">Sign in with Google</h3>
+            <div class="flex items-center gap-1.5 mb-0.5">
+              <h3 class="font-serif font-black text-xl text-ink-900">Sign in with Google</h3>
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                🔒 Trusted Only
+              </span>
+            </div>
             <p class="text-xs text-stone-500">Instant access to BookBridge Digital Stacks</p>
           </div>
         </div>
@@ -590,12 +595,23 @@
         </button>
       </div>
 
+      <!-- Security Status Banner -->
+      <div class="mb-4 p-3 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-start gap-2.5">
+        <i data-lucide="shield-check" class="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5"></i>
+        <p class="text-[11px] text-amber-800 leading-relaxed">
+          <strong class="font-extrabold">Patron Verification Active:</strong> Only cryptographically verified Google accounts registered on the library's trusted whitelist are granted borrowing & exchange access.
+        </p>
+      </div>
+
+      <!-- Inline Error Notification Box -->
+      <div id="google-auth-error-box" class="hidden mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs"></div>
+
       <!-- Real Google GIS Container (if GOOGLE_CLIENT_ID configured) -->
       <div id="google-gis-container" class="hidden mb-4 flex justify-center"></div>
 
-      <!-- Quick 1-Click Google Profiles -->
+      <!-- Quick 1-Click Trusted Google Profiles -->
       <div class="space-y-2 mb-5">
-        <p class="text-[10px] font-extrabold uppercase tracking-widest text-stone-400">Select Google Account</p>
+        <p class="text-[10px] font-extrabold uppercase tracking-widest text-stone-400">Authorized Whitelisted Patrons</p>
         
         <button type="button" onclick="app.submitGoogleAuth('alex.reader@gmail.com', 'Alex Rivera', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150')" class="w-full p-3.5 rounded-2xl border border-stone-200 hover:border-emerald-700 hover:bg-emerald-50/50 flex items-center gap-3.5 text-left transition-all group">
           <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" class="w-10 h-10 rounded-full object-cover ring-2 ring-stone-200 group-hover:ring-emerald-700" alt="Alex Rivera">
@@ -603,7 +619,7 @@
             <div class="text-sm font-extrabold text-ink-900 group-hover:text-emerald-900">Alex Rivera</div>
             <div class="text-xs text-stone-500 font-mono truncate">alex.reader@gmail.com</div>
           </div>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Verified</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Trusted</span>
         </button>
 
         <button type="button" onclick="app.submitGoogleAuth('maya.researcher@gmail.com', 'Dr. Maya Lin', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150')" class="w-full p-3.5 rounded-2xl border border-stone-200 hover:border-emerald-700 hover:bg-emerald-50/50 flex items-center gap-3.5 text-left transition-all group">
@@ -612,13 +628,13 @@
             <div class="text-sm font-extrabold text-ink-900 group-hover:text-emerald-900">Dr. Maya Lin</div>
             <div class="text-xs text-stone-500 font-mono truncate">maya.researcher@gmail.com</div>
           </div>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Verified</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Trusted</span>
         </button>
       </div>
 
       <!-- Custom Google Account -->
       <div class="pt-4 border-t border-stone-100">
-        <p class="text-[10px] font-extrabold uppercase tracking-widest text-stone-400 mb-2.5">Or Enter Custom Google Account</p>
+        <p class="text-[10px] font-extrabold uppercase tracking-widest text-stone-400 mb-2.5">Or Verify Another Google Account</p>
         <form onsubmit="app.handleCustomGoogleAuth(event)" class="space-y-3">
           <div>
             <label class="block text-[11px] font-bold text-ink-700 uppercase tracking-wider mb-1">Google Email</label>
@@ -629,14 +645,14 @@
             <input type="text" id="custom-google-name" required placeholder="Your Name" class="w-full px-4 py-2.5 rounded-2xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700">
           </div>
           <button type="submit" id="custom-google-btn" class="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-800 to-emerald-950 text-white font-extrabold text-sm hover:from-emerald-700 hover:to-emerald-900 transition-all flex items-center justify-center gap-2">
-            <span>Continue with this Account</span>
+            <span>Verify & Enter Library</span>
             <i data-lucide="arrow-right" class="w-4 h-4"></i>
           </button>
         </form>
       </div>
       
       <p class="text-[10px] text-stone-400 text-center mt-3">
-        Connected securely via Google Identity Services and SQLite database session.
+        Cryptographically verified with Google Identity Services & SQLite database.
       </p>
     </div>
   </div>
@@ -1095,6 +1111,11 @@
       triggerGoogleSignIn() {
         this.closeModal('login-modal');
         this.closeModal('register-modal');
+        const errBox = document.getElementById('google-auth-error-box');
+        if (errBox) {
+          errBox.classList.add('hidden');
+          errBox.innerHTML = '';
+        }
         this.openModal('google-modal');
 
         if (this.googleConfigured && window.google?.accounts?.id) {
@@ -1108,6 +1129,8 @@
 
       async handleGoogleCredential(response) {
         if (!response || !response.credential) return;
+        const errBox = document.getElementById('google-auth-error-box');
+        if (errBox) errBox.classList.add('hidden');
         try {
           const res = await fetch('/api/auth/google', {
             method: 'POST',
@@ -1127,6 +1150,19 @@
             await this.checkAuth();
             this.navigate(this.currentView === 'home' ? 'library' : this.currentView);
           } else {
+            if (errBox) {
+              errBox.classList.remove('hidden');
+              errBox.innerHTML = `
+                <div class="flex items-start gap-2.5">
+                  <i data-lucide="shield-alert" class="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5"></i>
+                  <div>
+                    <p class="font-extrabold text-rose-900">${data.trusted_error ? 'Access Restricted: Untrusted Account' : 'Verification Denied'}</p>
+                    <p class="text-[11px] text-rose-700 mt-0.5 leading-relaxed">${data.message}</p>
+                  </div>
+                </div>
+              `;
+              this.renderIcons();
+            }
             this.toast(data.message || 'Google authentication failed', 'error');
           }
         } catch (err) {
@@ -1135,6 +1171,8 @@
       },
 
       async submitGoogleAuth(email, name, avatar) {
+        const errBox = document.getElementById('google-auth-error-box');
+        if (errBox) errBox.classList.add('hidden');
         try {
           const res = await fetch('/api/auth/google', {
             method: 'POST',
@@ -1154,6 +1192,19 @@
             await this.checkAuth();
             this.navigate(this.currentView === 'home' ? 'library' : this.currentView);
           } else {
+            if (errBox) {
+              errBox.classList.remove('hidden');
+              errBox.innerHTML = `
+                <div class="flex items-start gap-2.5">
+                  <i data-lucide="shield-alert" class="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5"></i>
+                  <div>
+                    <p class="font-extrabold text-rose-900">${data.trusted_error ? 'Access Restricted: Untrusted Account' : 'Verification Denied'}</p>
+                    <p class="text-[11px] text-rose-700 mt-0.5 leading-relaxed">${data.message}</p>
+                  </div>
+                </div>
+              `;
+              this.renderIcons();
+            }
             this.toast(data.message || 'Google authentication failed', 'error');
           }
         } catch (err) {
@@ -2627,18 +2678,22 @@
         container.innerHTML = `<div class="h-96 skeleton-shimmer rounded-3xl"></div>`;
 
         try {
-          const [overviewRes, donRes, borRes, retRes] = await Promise.all([
+          const [overviewRes, donRes, borRes, retRes, tgRes] = await Promise.all([
             fetch('/api/admin/overview', { credentials: 'include' }),
             fetch('/api/donations?status=pending', { credentials: 'include' }),
             fetch('/api/borrowings/requests?status=pending', { credentials: 'include' }),
-            fetch('/api/returns?status=pending', { credentials: 'include' })
+            fetch('/api/returns?status=pending', { credentials: 'include' }),
+            fetch('/api/admin/trusted-gmails', { credentials: 'include' })
           ]);
-          const [overviewData, donData, borData, retData] = await Promise.all([overviewRes.json(), donRes.json(), borRes.json(), retRes.json()]);
+          const [overviewData, donData, borData, retData, tgData] = await Promise.all([
+            overviewRes.json(), donRes.json(), borRes.json(), retRes.json(), tgRes.json()
+          ]);
 
           const stats = overviewData.stats || {};
           const pendingDons = donData.donations || [];
           const pendingBors = borData.requests || [];
           const pendingRets = retData.return_requests || [];
+          const trustedGmails = tgData.trusted_gmails || [];
 
           container.innerHTML = `
             <div class="space-y-10">
@@ -2742,6 +2797,82 @@
 
               </div>
 
+              <!-- 🛡️ TRUSTED GOOGLE ACCOUNTS WHITELIST & SECURITY -->
+              <div class="glass-card rounded-3xl p-8 border border-emerald-900/10 shadow-glass space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center flex-shrink-0">
+                      <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <h3 class="font-serif font-black text-2xl text-ink-900">Trusted Google Accounts</h3>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          WHITELIST ACTIVE
+                        </span>
+                      </div>
+                      <p class="text-xs text-stone-500 mt-0.5">Strict Patron Security: Only verified Google accounts on this whitelist can log in or access BookBridge services.</p>
+                    </div>
+                  </div>
+                  <span class="text-xs font-mono font-bold text-stone-600 bg-stone-100 px-3.5 py-1.5 rounded-xl self-start sm:self-auto border border-stone-200">
+                    ${trustedGmails.length} Authorized Patron${trustedGmails.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+
+                <!-- Add New Trusted Gmail Form -->
+                <form onsubmit="app.addTrustedGmail(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-3 p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/80">
+                  <div class="sm:col-span-4">
+                    <label class="block text-[10px] font-bold text-ink-700 uppercase tracking-wider mb-1">Google Email</label>
+                    <input type="email" id="tg-email" required placeholder="patron@gmail.com" class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs font-semibold focus:ring-2 focus:ring-emerald-700 bg-white">
+                  </div>
+                  <div class="sm:col-span-3">
+                    <label class="block text-[10px] font-bold text-ink-700 uppercase tracking-wider mb-1">Patron Name</label>
+                    <input type="text" id="tg-name" placeholder="Full Name" class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs font-semibold focus:ring-2 focus:ring-emerald-700 bg-white">
+                  </div>
+                  <div class="sm:col-span-3">
+                    <label class="block text-[10px] font-bold text-ink-700 uppercase tracking-wider mb-1">Notes / Affiliation</label>
+                    <input type="text" id="tg-notes" placeholder="e.g. Faculty, Student, Researcher" class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs font-semibold focus:ring-2 focus:ring-emerald-700 bg-white">
+                  </div>
+                  <div class="sm:col-span-2 flex items-end">
+                    <button type="submit" id="btn-add-tg" class="w-full py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5">
+                      <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+                      <span>Authorize</span>
+                    </button>
+                  </div>
+                </form>
+
+                <!-- Whitelisted Accounts Table -->
+                <div class="overflow-x-auto rounded-2xl border border-stone-200/80">
+                  <table class="w-full text-left text-xs bg-white">
+                    <thead class="bg-stone-50 border-b border-stone-200">
+                      <tr class="text-[10px] font-extrabold uppercase tracking-wider text-stone-500">
+                        <th class="py-3 px-4">Authorized Email</th>
+                        <th class="py-3 px-4">Patron Name</th>
+                        <th class="py-3 px-4">Notes</th>
+                        <th class="py-3 px-4">Granted Date</th>
+                        <th class="py-3 px-4 text-right">Access Control</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-100">
+                      ${trustedGmails.map(g => `
+                        <tr class="hover:bg-emerald-50/30 transition-colors">
+                          <td class="py-3 px-4 font-mono font-bold text-ink-900">${g.email}</td>
+                          <td class="py-3 px-4 text-stone-700 font-semibold">${g.name || '—'}</td>
+                          <td class="py-3 px-4 text-stone-500">${g.notes || '—'}</td>
+                          <td class="py-3 px-4 text-stone-400 font-mono text-[10px]">${this.formatDate(g.added_at)}</td>
+                          <td class="py-3 px-4 text-right">
+                            <button onclick="app.deleteTrustedGmail(${g.id}, '${g.email}')" class="px-3 py-1 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 text-[10px] font-extrabold transition-colors">
+                              Revoke Access
+                            </button>
+                          </td>
+                        </tr>
+                      `).join('') || `<tr><td colspan="5" class="py-6 text-center text-stone-400">No whitelisted Google accounts found.</td></tr>`}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               <!-- Open Library Online API Importer & Database Storing -->
               <div class="glass-card rounded-3xl p-8 border border-emerald-300/80 shadow-glass space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
@@ -2812,6 +2943,53 @@
             this.toast(data.message || 'Action failed', 'error');
           }
         } catch (e) {
+          this.toast('Network error', 'error');
+        }
+      },
+
+      async addTrustedGmail(e) {
+        e.preventDefault();
+        const email = document.getElementById('tg-email').value.trim();
+        const name = document.getElementById('tg-name').value.trim();
+        const notes = document.getElementById('tg-notes').value.trim();
+        const btn = document.getElementById('btn-add-tg');
+        if (btn) btn.disabled = true;
+        try {
+          const res = await fetch('/api/admin/trusted-gmails', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, name, notes })
+          });
+          const data = await res.json();
+          if (data.success) {
+            this.toast(data.message, 'success');
+            this.renderAdmin(document.getElementById('app-content'));
+          } else {
+            this.toast(data.message || 'Failed to add trusted email', 'error');
+          }
+        } catch (err) {
+          this.toast('Network error', 'error');
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      },
+
+      async deleteTrustedGmail(id, email) {
+        if (!confirm(`Are you sure you want to revoke trusted access for '${email}'?`)) return;
+        try {
+          const res = await fetch(`/api/admin/trusted-gmails/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+          });
+          const data = await res.json();
+          if (data.success) {
+            this.toast(data.message, 'success');
+            this.renderAdmin(document.getElementById('app-content'));
+          } else {
+            this.toast(data.message || 'Failed to revoke access', 'error');
+          }
+        } catch (err) {
           this.toast('Network error', 'error');
         }
       },

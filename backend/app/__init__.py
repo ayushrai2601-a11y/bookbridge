@@ -14,6 +14,21 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
     
+    # Ensure database tables exist (e.g. trusted_gmails)
+    with app.app_context():
+        from .models import TrustedGmail
+        db.create_all()
+        # Seed default trusted gmails if table is empty
+        if TrustedGmail.query.count() == 0:
+            default_trusted = [
+                TrustedGmail(email='admin@bookbridge.org', name='Eleanor Vance', notes='Head Librarian'),
+                TrustedGmail(email='alex.reader@gmail.com', name='Alex Rivera', notes='Verified Patron (Literature)'),
+                TrustedGmail(email='maya.researcher@gmail.com', name='Dr. Maya Lin', notes='Academic Researcher'),
+                TrustedGmail(email='clara.oswald@gmail.com', name='Clara Oswald', notes='Verified Senior Patron')
+            ]
+            db.session.add_all(default_trusted)
+            db.session.commit()
+    
     # CORS setup to allow credentials for session cookies
     CORS(app, supports_credentials=True, origins=app.config['CORS_ORIGINS'])
     

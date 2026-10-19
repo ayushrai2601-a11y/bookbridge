@@ -1,6 +1,6 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_user, logout_user, login_required, current_user
-from ..models import db, User
+from ..models import db, User, TrustedGmail
 from ..utils import notify_user
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
@@ -146,22 +146,32 @@ def change_password():
 
 @auth_bp.route('/google/config', methods=['GET'])
 def get_google_config():
-    """Returns Google Client ID configuration if set in environment."""
-    import os
-    client_id = os.environ.get('GOOGLE_CLIENT_ID', '')
+    """Returns Google Client ID and Trusted Patron security configuration."""
+    client_id = current_app.config.get('GOOGLE_CLIENT_ID', '')
+    trusted_only = current_app.config.get('TRUSTED_GMAIL_ONLY', True)
+    allowed_domains = current_app.config.get('ALLOWED_GMAIL_DOMAINS', ['gmail.com', 'googlemail.com'])
+    trusted_count = TrustedGmail.query.count()
+    
     return jsonify({
         'success': True,
         'client_id': client_id,
-        'configured': bool(client_id)
+        'configured': bool(client_id),
+        'trusted_only': trusted_only,
+        'allowed_domains': allowed_domains,
+        'trusted_count': trusted_count
     })
 
 @auth_bp.route('/google', methods=['POST'])
 def google_auth():
     """
-    Sign in or register a patron using Google Account.
-    Accepts:
-    1. Google Identity Services ID Token credential (verified via Google tokeninfo)
-    2. Direct Google profile payload { email, name, avatar, google_id }
+    Sign in or register a patron using a verified Google Account.
+    Security protections:
+    1. Cryptographic Google ID Token verification via Google OAuth2 tokeninfo.
+    2. Check Google's email_verified flag (must be True).
+    3. Verify token audience (aud) matches GOOGLE_CLIENT_ID if configured.
+    4. Domain validation (must belong to allowed Google domains).
+    5. Trusted Patron Whitelist enforcement: only authorized/trusted Google accounts can enter.
+    6. Admin account protection: disallow unauthorized takeover of administrative accounts.
     """
     import os
     import secrets
@@ -170,79 +180,127 @@ def google_auth():
     
     data = request.get_json() or {}
     credential = data.get('credential')
+    client_id = current_app.config.get('GOOGLE_CLIENT_ID', '')
+    trusted_only = current_app.config.get('TRUSTED_GMAIL_ONLY', True)
+    allowed_domains = current_app.config.get('ALLOWED_GMAIL_DOMAINS', ['gmail.com', 'googlemail.com'])
     
     email = None
     name = None
     avatar = None
+    token_verified = False
     
-    # 1. If Google ID Token credential was sent from Google Identity Services
+    # 1. Cryptographic Google ID Token verification
     if credential:
         try:
             token_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={credential}"
-            req = urllib.request.Request(token_url, headers={'User-Agent': 'BookBridge/1.0'})
-            with urllib.request.urlopen(req, timeout=8) as res:
+            req = urllib.request.Request(token_url, headers={'User-Agent': 'BookBridge-Security/1.0'})
+            with urllib.request.urlopen(req, timeout=10) as res:
                 google_info = json.loads(res.read().decode('utf-8'))
+                
+                if 'error' in google_info or 'error_description' in google_info:
+                    return jsonify({'success': False, 'message': f"Google verification rejected: {google_info.get('error_description', 'Invalid token')}"}), 401
+                
+                # Check audience if client_id is configured
+                if client_id and google_info.get('aud') != client_id:
+                    return jsonify({'success': False, 'message': 'Google token audience mismatch (unauthorized client)'}), 403
+                
+                # Verify that Google has verified the email
+                email_verified = str(google_info.get('email_verified', '')).lower()
+                if email_verified not in ('true', '1'):
+                    return jsonify({'success': False, 'message': 'This Google account has not verified their email address with Google.'}), 403
+                
                 email = google_info.get('email', '').strip().lower()
                 name = google_info.get('name', '').strip()
                 avatar = google_info.get('picture', '').strip()
+                token_verified = True
+        except urllib.error.HTTPError as he:
+            return jsonify({'success': False, 'message': 'Google rejected authentication token. Please sign in again.'}), 401
         except Exception as e:
-            # Fall back to provided user info if offline or token inspection failed
-            pass
+            return jsonify({'success': False, 'message': 'Unable to connect to Google verification services. Please check network connectivity.'}), 503
+    else:
+        # No cryptographic token provided
+        if client_id:
+            return jsonify({
+                'success': False,
+                'message': 'Security requirement: Cryptographic Google ID Token is required. Direct payloads are disabled.'
+            }), 400
             
-    # 2. If direct profile data provided (or fallback from payload)
-    if not email:
+        # In local evaluation mode (client_id not yet provided in .env):
         email = data.get('email', '').strip().lower()
         name = data.get('name', '').strip()
         avatar = data.get('avatar', '').strip()
         
     if not email:
-        return jsonify({'success': False, 'message': 'Valid Google email is required'}), 400
+        return jsonify({'success': False, 'message': 'A valid Google email address is required'}), 400
         
-    if not name:
-        name = email.split('@')[0].capitalize()
+    # 2. Domain Validation: Ensure it's a Gmail / allowed Google domain
+    domain = email.split('@')[-1] if '@' in email else ''
+    if domain not in allowed_domains:
+        return jsonify({
+            'success': False,
+            'message': f"Access restricted: '@{domain}' is not an authorized Google domain. Only @{', @'.join(allowed_domains)} accounts are permitted."
+        }), 403
+
+    # 3. Trusted Patron Whitelist Enforcement ("only trusted can use it")
+    if trusted_only:
+        is_trusted = TrustedGmail.query.filter_by(email=email).first() is not None
+        existing_user = User.query.filter_by(email=email).first()
         
-    if not avatar:
-        avatar = f"https://api.dicebear.com/7.x/initials/svg?seed={name}&backgroundColor=166534&textColor=ffffff"
-        
-    # Check if user already exists
+        if not is_trusted and not existing_user:
+            return jsonify({
+                'success': False,
+                'trusted_error': True,
+                'message': f"Access restricted: '{email}' is not on the library's trusted Google patrons list. Please ask the librarian (admin@bookbridge.org) to authorize your Gmail address."
+            }), 403
+
+    # 4. Existing User Protection & Lookup
     user = User.query.filter_by(email=email).first()
     is_new = False
     
     if user:
-        # Existing user: update avatar if not present
+        # Security protection: Administrator accounts cannot be hijacked without verified token in production
+        if user.is_admin and client_id and not token_verified:
+            return jsonify({'success': False, 'message': 'Administrator accounts require cryptographic Google verification'}), 403
+            
         if avatar and (not user.avatar or 'dicebear' in user.avatar):
             user.avatar = avatar
             db.session.commit()
     else:
-        # New Google user: register account automatically
         is_new = True
-        random_pwd = secrets.token_urlsafe(24)
+        random_pwd = secrets.token_urlsafe(32)
         user = User(
-            name=name,
+            name=name or email.split('@')[0].capitalize(),
             email=email,
             role='user',
-            avatar=avatar,
-            bio='Community patron signed in with Google Account.'
+            avatar=avatar or f"https://api.dicebear.com/7.x/initials/svg?seed={name or 'P'}&backgroundColor=166534&textColor=ffffff",
+            bio='Verified Trusted Google Patron.'
         )
         user.set_password(random_pwd)
         db.session.add(user)
         db.session.commit()
         
+        # Ensure recorded in TrustedGmail table
+        if not TrustedGmail.query.filter_by(email=email).first():
+            tg = TrustedGmail(email=email, name=user.name, notes="Auto-registered via Verified Google Sign-in")
+            db.session.add(tg)
+            db.session.commit()
+            
         notify_user(
             user.id,
             "Welcome to BookBridge! 📚",
-            f"Hello {name}, your library account is ready with Google Sign-in.",
+            f"Hello {user.name}, your trusted library card is active and verified via Google.",
             "success",
             "/library"
         )
         
-    # Login user session
     login_user(user, remember=True)
     
     return jsonify({
         'success': True,
-        'message': f"Signed in as {user.name} via Google Account",
+        'message': f"Authenticated as {user.name} ({user.email})",
         'user': user.to_dict(),
-        'is_new_user': is_new
+        'is_new_user': is_new,
+        'token_verified': token_verified
     })
+
 

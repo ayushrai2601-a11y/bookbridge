@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func
 from datetime import datetime, timezone
-from ..models import db, User, Book, BookCopy, Donation, BorrowingRequest, BorrowingTransaction, ReturnRequest, ExchangeListing, ExchangeRequest, Category
+from ..models import db, User, Book, BookCopy, Donation, BorrowingRequest, BorrowingTransaction, ReturnRequest, ExchangeListing, ExchangeRequest, Category, TrustedGmail
 from ..utils import admin_required
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
@@ -138,4 +138,59 @@ def reset_database_endpoint():
             'success': False,
             'message': f'Reset failed: {str(e)}'
         }), 500
+
+@admin_bp.route('/trusted-gmails', methods=['GET'])
+@admin_required
+def get_trusted_gmails():
+    gmails = TrustedGmail.query.order_by(TrustedGmail.added_at.desc()).all()
+    return jsonify({
+        'success': True,
+        'trusted_gmails': [g.to_dict() for g in gmails]
+    })
+
+@admin_bp.route('/trusted-gmails', methods=['POST'])
+@admin_required
+def add_trusted_gmail():
+    data = request.get_json() or {}
+    email = data.get('email', '').strip().lower()
+    name = data.get('name', '').strip()
+    notes = data.get('notes', '').strip()
+    
+    if not email or '@' not in email:
+        return jsonify({'success': False, 'message': 'A valid email address is required'}), 400
+        
+    existing = TrustedGmail.query.filter_by(email=email).first()
+    if existing:
+        return jsonify({'success': False, 'message': f"'{email}' is already in the trusted patrons list"}), 400
+        
+    tg = TrustedGmail(
+        email=email,
+        name=name or email.split('@')[0].capitalize(),
+        notes=notes or 'Authorized by Librarian'
+    )
+    db.session.add(tg)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': f"Added '{email}' to trusted Google patrons list",
+        'trusted_gmail': tg.to_dict()
+    })
+
+@admin_bp.route('/trusted-gmails/<int:id>', methods=['DELETE'])
+@admin_required
+def delete_trusted_gmail(id):
+    tg = db.session.get(TrustedGmail, id)
+    if not tg:
+        return jsonify({'success': False, 'message': 'Trusted entry not found'}), 404
+        
+    email = tg.email
+    db.session.delete(tg)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': f"Removed '{email}' from trusted Google patrons list"
+    })
+
 

@@ -474,3 +474,23 @@ class ReadingList(db.Model):
             'list_type': self.list_type,
             'added_at': self.added_at.isoformat() if self.added_at else None
         }
+
+# 14. TRUSTED GMAIL MODEL
+class TrustedGmail(db.Model):
+    __tablename__ = 'trusted_gmails'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, index=True, nullable=False)
+    name = db.Column(db.String(100), nullable=True)
+    notes = db.Column(db.String(255), nullable=True)
+    added_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'name': self.name or '',
+            'notes': self.notes or '',
+            'added_at': self.added_at.isoformat() if self.added_at else None
+        }
+

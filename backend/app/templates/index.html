@@ -1835,7 +1835,31 @@
               </p>
             </div>
 
-            <div class="glass-card rounded-3xl p-8 sm:p-12 border border-stone-200/80 shadow-glass">
+            <div class="glass-card rounded-3xl p-8 sm:p-12 border border-stone-200/80 shadow-glass space-y-6">
+              
+              <!-- Open Library API Auto-Fill Helper -->
+              <div class="p-5 rounded-2xl bg-emerald-50/80 border border-emerald-200/90 space-y-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                  <h4 class="font-bold text-xs text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+                    <span>Fast Auto-Fill via Open Library API</span>
+                  </h4>
+                </div>
+                <p class="text-xs text-emerald-900/80 leading-relaxed">
+                  Have the book's ISBN or title? Search Open Library to automatically fetch author, cover art, and genre metadata.
+                </p>
+                <div class="flex gap-2">
+                  <input type="text" id="don-autofill-query" placeholder="Enter ISBN (e.g. 9780132350884) or title..." 
+                    class="flex-1 px-4 py-2.5 rounded-xl border border-emerald-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white">
+                  <button type="button" onclick="app.autoFillDonation()" id="btn-autofill"
+                    class="px-5 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs transition-all flex items-center gap-1.5 flex-shrink-0">
+                    <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
+                    <span>Auto-Fill Details</span>
+                  </button>
+                </div>
+              </div>
+
               <form onsubmit="app.submitDonation(event)" class="space-y-6">
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -1892,6 +1916,53 @@
           </div>
         `;
         this.renderIcons();
+      },
+
+      async autoFillDonation() {
+        const input = document.getElementById('don-autofill-query');
+        const q = input ? input.value.trim() : '';
+        if (!q) {
+          this.toast('Please enter an ISBN or book title to auto-fill', 'warning');
+          return;
+        }
+        const btn = document.getElementById('btn-autofill');
+        if (btn) btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Fetching API...</span>';
+        this.renderIcons();
+
+        try {
+          const res = await fetch('/api/external-books/auto-fill', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: q, isbn: q.replace(/[^0-9X]/gi, '') })
+          });
+          const data = await res.json();
+          if (data.success && data.data) {
+            const b = data.data;
+            if (b.title) document.getElementById('don-title').value = b.title;
+            if (b.author) document.getElementById('don-author').value = b.author;
+            if (b.cover_image) document.getElementById('don-cover').value = b.cover_image;
+            if (b.description) document.getElementById('don-desc').value = b.description;
+            if (b.category_name) {
+              const sel = document.getElementById('don-category');
+              for (let opt of sel.options) {
+                if (opt.text.toLowerCase().includes(b.category_name.toLowerCase()) || b.category_name.toLowerCase().includes(opt.text.toLowerCase())) {
+                  opt.selected = true;
+                  break;
+                }
+              }
+            }
+            confetti({ particleCount: 40, spread: 50, origin: { y: 0.7 } });
+            this.toast(`Metadata for '${b.title}' auto-filled via Open Library API! 🪄`, 'success');
+          } else {
+            this.toast('Book details not found on Open Library API', 'warning');
+          }
+        } catch (e) {
+          this.toast('Failed to reach Open Library API', 'error');
+        } finally {
+          if (btn) btn.innerHTML = '<i data-lucide="wand-2" class="w-3.5 h-3.5"></i><span>Auto-Fill Details</span>';
+          this.renderIcons();
+        }
       },
 
       async submitDonation(e) {
@@ -2424,6 +2495,57 @@
 
               </div>
 
+              <!-- Open Library Online API Importer & Database Storing -->
+              <div class="glass-card rounded-3xl p-8 border border-emerald-300/80 shadow-glass space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        LIVE API INTEGRATION
+                      </span>
+                      <span class="text-xs font-mono text-stone-400">Open Library Global REST API</span>
+                    </div>
+                    <h3 class="font-serif font-black text-2xl text-ink-900 mt-1">Global Book API Importer</h3>
+                    <p class="text-xs text-stone-500 mt-0.5">Search millions of public books globally and import them with physical barcodes directly into your SQLite database.</p>
+                  </div>
+                </div>
+
+                <!-- Importer Controls -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                  <!-- Search by Query -->
+                  <div class="md:col-span-8 flex gap-2">
+                    <div class="relative flex-1">
+                      <i data-lucide="search" class="w-4 h-4 text-stone-400 absolute left-3.5 top-3.5"></i>
+                      <input type="text" id="api-search-query" placeholder="Search Open Library by title, author, or keyword..." 
+                        class="w-full pl-10 pr-4 py-3 rounded-2xl border border-stone-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                        onkeydown="if(event.key==='Enter') app.searchOnlineBooks()">
+                    </div>
+                    <button onclick="app.searchOnlineBooks()" id="btn-api-search" class="px-5 py-3 rounded-2xl bg-emerald-800 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs transition-colors flex items-center gap-1.5 flex-shrink-0">
+                      <i data-lucide="globe" class="w-4 h-4"></i>
+                      <span>Search API</span>
+                    </button>
+                  </div>
+
+                  <!-- Direct ISBN Import -->
+                  <div class="md:col-span-4 flex gap-2">
+                    <input type="text" id="api-direct-isbn" placeholder="Direct ISBN (e.g. 9780132350884)" 
+                      class="flex-1 px-4 py-3 rounded-2xl border border-stone-200 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white">
+                    <button onclick="app.importByIsbnDirect()" id="btn-isbn-import" class="px-4 py-3 rounded-2xl bg-ink-900 hover:bg-emerald-900 text-white font-extrabold text-xs shadow-xs transition-colors flex items-center gap-1.5 flex-shrink-0">
+                      <i data-lucide="download" class="w-4 h-4"></i>
+                      <span>Import</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- API Search Results Grid -->
+                <div id="api-search-results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                  <div class="p-6 bg-stone-50 rounded-2xl border border-stone-100 text-center col-span-3 text-xs text-stone-400">
+                    Enter a title or ISBN above to search Open Library and import directly into the SQLite database.
+                  </div>
+                </div>
+              </div>
+
             </div>
           `;
           this.renderIcons();
@@ -2444,6 +2566,127 @@
           }
         } catch (e) {
           this.toast('Network error', 'error');
+        }
+      },
+
+      async searchOnlineBooks() {
+        const input = document.getElementById('api-search-query');
+        const q = input ? input.value.trim() : '';
+        if (!q) {
+          this.toast('Please enter a search query', 'warning');
+          return;
+        }
+        const btn = document.getElementById('btn-api-search');
+        if (btn) btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Calling API...</span>';
+        this.renderIcons();
+
+        const container = document.getElementById('api-search-results');
+        container.innerHTML = '<div class="col-span-3 text-center py-8 text-stone-400 text-xs">Connecting to Open Library Global REST API...</div>';
+
+        try {
+          const res = await fetch(`/api/external-books/search?q=${encodeURIComponent(q)}&limit=6`, { credentials: 'include' });
+          const data = await res.json();
+          if (data.success && data.books && data.books.length) {
+            container.innerHTML = data.books.map((b, i) => `
+              <div class="p-4 rounded-2xl bg-white border border-stone-200/90 shadow-xs flex gap-3 hover:border-emerald-600 transition-all">
+                <img src="${b.cover_image}" class="w-12 h-16 object-cover rounded-lg shadow-xs flex-shrink-0" onerror="this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200'">
+                <div class="flex-1 min-w-0 flex flex-col justify-between">
+                  <div>
+                    <h5 class="font-serif font-bold text-xs text-ink-900 truncate" title="${b.title}">${b.title}</h5>
+                    <p class="text-[11px] text-stone-500 truncate">by ${b.author}</p>
+                    <div class="flex items-center gap-1.5 mt-1">
+                      <span class="text-[9px] font-mono text-stone-400">${b.publication_year}</span>
+                      <span class="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded">${b.category_name}</span>
+                    </div>
+                  </div>
+                  <div class="pt-2 mt-1 border-t border-stone-100 flex items-center justify-between">
+                    <span class="text-[9px] font-mono text-stone-400 truncate max-w-[80px]">ISBN: ${b.isbn}</span>
+                    ${b.already_in_catalog ? `
+                      <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-stone-100 text-stone-500">In Stacks</span>
+                    ` : `
+                      <button onclick="app.importOnlineBook('${b.isbn}', '${b.title.replace(/'/g, "\\'")}', '${b.author.replace(/'/g, "\\'")}', '${b.cover_image}', '${b.publisher.replace(/'/g, "\\'")}', ${b.publication_year}, '${b.category_name}')" 
+                        class="px-2.5 py-1 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white font-extrabold text-[10px] shadow-xs flex items-center gap-1 transition-colors">
+                        <i data-lucide="plus" class="w-3 h-3"></i>
+                        <span>Store in DB</span>
+                      </button>
+                    `}
+                  </div>
+                </div>
+              </div>
+            `).join('');
+          } else {
+            container.innerHTML = '<div class="col-span-3 text-center py-8 text-stone-400 text-xs">No matching books found on Open Library API.</div>';
+          }
+        } catch (e) {
+          container.innerHTML = '<div class="col-span-3 text-center py-8 text-rose-500 text-xs">Network error reaching external book API.</div>';
+        } finally {
+          if (btn) btn.innerHTML = '<i data-lucide="globe" class="w-4 h-4"></i><span>Search API</span>';
+          this.renderIcons();
+        }
+      },
+
+      async importByIsbnDirect() {
+        const input = document.getElementById('api-direct-isbn');
+        const isbn = input ? input.value.trim() : '';
+        if (!isbn) {
+          this.toast('Please enter a valid ISBN code', 'warning');
+          return;
+        }
+        const btn = document.getElementById('btn-isbn-import');
+        if (btn) btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
+        this.renderIcons();
+
+        try {
+          const res = await fetch('/api/external-books/import', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isbn: isbn, copies_count: 2 })
+          });
+          const data = await res.json();
+          if (data.success) {
+            confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+            this.toast(data.message, 'success');
+            if (input) input.value = '';
+            this.renderAdmin(document.getElementById('app-content'));
+          } else {
+            this.toast(data.message || 'Import failed', 'error');
+          }
+        } catch (e) {
+          this.toast('API connection error', 'error');
+        } finally {
+          if (btn) btn.innerHTML = '<i data-lucide="download" class="w-4 h-4"></i><span>Import</span>';
+          this.renderIcons();
+        }
+      },
+
+      async importOnlineBook(isbn, title, author, cover, publisher, year, catName) {
+        try {
+          const res = await fetch('/api/external-books/import', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              isbn: isbn !== 'N/A' ? isbn : '',
+              title: title,
+              author: author,
+              cover_image: cover,
+              publisher: publisher,
+              publication_year: year,
+              category_name: catName,
+              copies_count: 2
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+            this.toast(data.message, 'success');
+            this.renderAdmin(document.getElementById('app-content'));
+          } else {
+            this.toast(data.message || 'Failed to import book', 'error');
+          }
+        } catch (e) {
+          this.toast('Network error during import', 'error');
         }
       },
 

@@ -39,6 +39,7 @@ def create_app(config_class=Config):
     from .routes.reviews import reviews_bp
     from .routes.reading_list import reading_list_bp
     from .routes.recommendations import recommendations_bp
+    from .routes.external_books import external_books_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(books_bp)
@@ -53,6 +54,7 @@ def create_app(config_class=Config):
     app.register_blueprint(reviews_bp)
     app.register_blueprint(reading_list_bp)
     app.register_blueprint(recommendations_bp)
+    app.register_blueprint(external_books_bp)
     
     @app.route('/', methods=['GET'])
     def index():

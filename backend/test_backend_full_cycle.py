@@ -26,7 +26,12 @@ def request_json(opener, method, url, data=None):
             return e.code, {'raw': raw}
 
 def test_full_backend():
-    print("=== STARTING FULL BACKEND DATABASE STORAGE TEST ===")
+    print("=== STARTING FULL BACKEND DATABASE STORAGE & API TEST ===")
+    
+    # 0. Clean reset
+    init_opener = create_session()
+    status, res = request_json(init_opener, 'GET', '/api/admin/reset-database')
+    print(f"[OK] Database reset initialized: {res.get('message', '')}")
     
     # 1. Login as Sarah (Patron)
     patron = create_session()
@@ -100,7 +105,22 @@ def test_full_backend():
     assert status == 200, f"Stats failed: {res}"
     print(f"[OK] Public database stats: {res['stats']['total_books']} books, {res['stats']['total_members']} members")
 
-    print("\n>>> ALL DATABASE CRUD & PERSISTENCE TESTS PASSED 100%! <<<")
+    # 13. Test External Books Open Library API Search
+    status, res = request_json(patron, 'GET', '/api/external-books/search?q=algorithms&limit=2')
+    assert status == 200 and res['success'], f"Open Library search failed: {res}"
+    print(f"[OK] Open Library API Search: found {res['total_found']} matching books globally")
+
+    # 14. Test External Books Auto-Fill API
+    status, res = request_json(patron, 'POST', '/api/external-books/auto-fill', {'isbn': '9780132350884'})
+    assert status == 200 and res['success'], f"Open Library auto-fill failed: {res}"
+    print(f"[OK] Open Library API Auto-Fill: resolved '{res['data']['title']}' by {res['data']['author']}")
+
+    # 15. Test Admin Online Import into SQLite Database
+    status, res = request_json(admin, 'POST', '/api/external-books/import', {'isbn': '9780451524935', 'copies_count': 2})
+    assert status in [200, 201] and res['success'], f"Open Library import failed: {res}"
+    print(f"[OK] Open Library API Direct Import: {res['message']}")
+
+    print("\n>>> ALL DATABASE STORAGE & EXTERNAL API INTEGRATION TESTS PASSED 100%! <<<")
 
 if __name__ == '__main__':
     test_full_backend()
